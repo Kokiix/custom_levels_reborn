@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using BepInEx;
 using ComputerysModdingUtilities;
 using CustomLevelsReborn;
@@ -13,6 +14,7 @@ using UnityEngine.SceneManagement;
 public class CLRPlugin : BaseUnityPlugin
 {
     internal static List<string> ScenePaths = [];
+    internal static Dictionary<string, AssetBundle> ResourceBundles = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -29,27 +31,31 @@ public class CLRPlugin : BaseUnityPlugin
     }
 
     bool Debug = true; // TODO: replace with system that I won't forget to toggle
-    List<string> BundleNames = ["test_map"];
     private void RefreshBundles()
     {
         // In hot reload, assembly moves to diff folder
-        string bundlePath = Debug ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
+        string pluginDir = Debug ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
+        string bundleDir = Path.Combine(pluginDir, "bundles");
+
+        var bundleNames = Directory.GetFiles(bundleDir).Select(Path.GetFileName);
 
         // Unload old
         foreach (var existingBundle in AssetBundle.GetAllLoadedAssetBundles())
         {
-            if (BundleNames.Contains(existingBundle.name))
+            if (bundleNames.Contains(existingBundle.name))
                 existingBundle.Unload(true);
         }
 
         // Load in new
-        foreach (var bundleName in BundleNames)
+        foreach (var bundleName in bundleNames)
         {
-            var bundle = AssetBundle.LoadFromFile(Path.Combine(bundlePath, bundleName));
-            foreach (var path in bundle.GetAllScenePaths())
-            {
-                ScenePaths.Add(Path.GetFileNameWithoutExtension(path));
-            }
+            var bundle = AssetBundle.LoadFromFile(Path.Combine(bundleDir, bundleName));
+            if (bundleName.EndsWith("_resources"))
+                ResourceBundles.Add(bundleName, bundle);
+            else if (bundle.isStreamedSceneAssetBundle)
+                bundle.GetAllScenePaths()
+                    .Select(Path.GetFileNameWithoutExtension)
+                    .Do(ScenePaths.Add);
         }
     }
 }
