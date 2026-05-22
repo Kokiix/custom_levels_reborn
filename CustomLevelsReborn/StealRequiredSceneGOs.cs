@@ -11,7 +11,7 @@ static class StealSceneGOs
     static bool stolen = false;
     internal static void OnSceneLoad(Scene s, LoadSceneMode mode)
     {
-        if (!stolen && s.name == "MainMenu")
+        if (s.name == "MainMenu")
         {
             SceneManager.LoadSceneAsync(MapToStealFrom, LoadSceneMode.Additive);
             stolen = true;
@@ -30,6 +30,8 @@ static class StealSceneGOs
                     obj.SetActive(true);
                 }
             }
+
+            SceneManager.sceneLoaded -= OnSceneLoad;
             SceneManager.UnloadSceneAsync(MapToStealFrom);
         }
     }

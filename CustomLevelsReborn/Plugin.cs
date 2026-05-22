@@ -36,7 +36,7 @@ public class CLRPlugin : BaseUnityPlugin
         _harmony.UnpatchSelf();
     }
 
-    bool Debug = true; // TODO: replace with system that I won't forget to toggle
+    bool Debug = false; // TODO: replace with system that I won't forget to toggle
     private void RefreshBundles()
     {
         // In hot reload, assembly moves to diff folder, hence debug flag 
