@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BepInEx;
+using BepInEx.Logging;
 using ComputerysModdingUtilities;
 using CustomLevelsReborn;
 using HarmonyLib;
@@ -13,19 +14,21 @@ using UnityEngine.SceneManagement;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class CLRPlugin : BaseUnityPlugin
 {
+    internal static ManualLogSource Log;
     internal static List<string> ScenePaths = [];
-    // internal static Dictionary<string, AssetBundle> ResourceBundles = [];
     internal static Dictionary<string, Texture2D> MapThumbnails = [];
+    // internal static Dictionary<string, AssetBundle> ResourceBundles = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
     void Awake()
     {
+        Log = Logger;
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
 
         RefreshBundles();
-        StealSceneGOs.Start();
+        SceneManager.sceneLoaded += StealSceneGOs.OnSceneLoad;
     }
 
     void OnDestroy()
