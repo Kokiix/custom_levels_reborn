@@ -23,7 +23,9 @@ public class CLRPlugin : BaseUnityPlugin
     {
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
+
         RefreshBundles();
+        StealSceneGOs.Start();
     }
 
     void OnDestroy()
