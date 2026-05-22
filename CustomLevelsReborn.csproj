@@ -27,6 +27,7 @@
     <ItemGroup>
         <Reference Include="$(DLLs)\Assembly-CSharp.dll" Publicize="true" />
         <Reference Include="$(DLLs)\ComputerysModdingUtilities.dll" />
+        <Reference Include="$(DLLs)\UnityEngine.UI.dll" />
     </ItemGroup>
 
     <!-- Release -->

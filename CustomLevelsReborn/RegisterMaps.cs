@@ -42,3 +42,18 @@ static class RegisterScenes
         __instance.unlockedMaps = [.. __instance.unlockedMaps, .. customMapList.Select(map => map.index)];
     }
 }
+
+[HarmonyPatch(typeof(MapInstance), "Start")]
+static class SetThumbnail
+{
+    // Similar to above, technically unnecessary UI reload bc I'm lazy
+    public static void Postfix(MapInstance __instance)
+    {
+        if (!__instance.sprite)
+        {
+            __instance.sprite = CLRPlugin.MapThumbnails[__instance.name + "_resources"];
+            __instance.img.texture = __instance.sprite;
+            __instance.UpdateUI();
+        }
+    }
+}

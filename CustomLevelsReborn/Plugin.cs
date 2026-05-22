@@ -14,7 +14,8 @@ using UnityEngine.SceneManagement;
 public class CLRPlugin : BaseUnityPlugin
 {
     internal static List<string> ScenePaths = [];
-    internal static Dictionary<string, AssetBundle> ResourceBundles = [];
+    // internal static Dictionary<string, AssetBundle> ResourceBundles = [];
+    internal static Dictionary<string, Texture2D> MapThumbnails = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -33,7 +34,7 @@ public class CLRPlugin : BaseUnityPlugin
     bool Debug = true; // TODO: replace with system that I won't forget to toggle
     private void RefreshBundles()
     {
-        // In hot reload, assembly moves to diff folder
+        // In hot reload, assembly moves to diff folder, hence debug flag 
         string pluginDir = Debug ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
         string bundleDir = Path.Combine(pluginDir, "bundles");
 
@@ -51,7 +52,10 @@ public class CLRPlugin : BaseUnityPlugin
         {
             var bundle = AssetBundle.LoadFromFile(Path.Combine(bundleDir, bundleName));
             if (bundleName.EndsWith("_resources"))
-                ResourceBundles.Add(bundleName, bundle);
+            {
+                // ResourceBundles.Add(bundleName, bundle);
+                MapThumbnails.Add(bundleName, bundle.LoadAsset<Texture2D>("thumbnail"));
+            }
             else if (bundle.isStreamedSceneAssetBundle)
                 bundle.GetAllScenePaths()
                     .Select(Path.GetFileNameWithoutExtension)
