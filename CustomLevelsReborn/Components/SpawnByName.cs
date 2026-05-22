@@ -91,16 +91,14 @@ public class CustomSpawner : MonoBehaviour
         if (weaponString == "AKK")
             weaponString = "AK-K";
 
+        // Required for Recon mode
         if (SpawnerManager.NameToWeaponDict.Count == 0)
         {
             SpawnerManager.PopulateAllWeapons();
         }
-        Debug.LogError(weaponString);
-        Debug.LogError(SpawnerManager.NameToWeaponDict.Count);
-        Debug.LogError(SpawnerManager.NameToWeaponDict[weaponString]);
 
-        // var spawner = gameObject.AddComponent<ItemSpawner>();
-        // spawner.itemToSpawn = SpawnerManager.NameToWeaponDict[weaponString];
-        // spawner.weaponRespawnTimeInSeconds = _weaponRespawnTimeInSeconds;
+        var spawner = gameObject.AddComponent<ItemSpawner>();
+        spawner.itemToSpawn = SpawnerManager.NameToWeaponDict[weaponString];
+        spawner.weaponRespawnTimeInSeconds = _weaponRespawnTimeInSeconds;
     }
 }
