@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class CLRPlugin : BaseUnityPlugin
 {
-    internal List<string> ScenePaths = [];
+    internal static List<string> ScenePaths = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -48,7 +48,7 @@ public class CLRPlugin : BaseUnityPlugin
             var bundle = AssetBundle.LoadFromFile(Path.Combine(bundlePath, bundleName));
             foreach (var path in bundle.GetAllScenePaths())
             {
-                ScenePaths.Add(path);
+                ScenePaths.Add(Path.GetFileNameWithoutExtension(path));
             }
         }
     }
