@@ -28,6 +28,7 @@
         <Reference Include="$(DLLs)\Assembly-CSharp.dll" Publicize="true" />
         <Reference Include="$(DLLs)\ComputerysModdingUtilities.dll" />
         <Reference Include="$(DLLs)\UnityEngine.UI.dll" />
+        <Reference Include="$(DLLs)\FishNet.Runtime.dll" />
     </ItemGroup>
 
     <!-- Release -->
@@ -37,12 +38,12 @@
     </Target>
 
     <!-- Debug -->
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <IncludeSymbols>true</IncludeSymbols>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
     <Target Name="CopyDLL" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Debug' ">
-        <PropertyGroup>
-            <IncludeSymbols>true</IncludeSymbols>
-            <DebugSymbols>true</DebugSymbols>
-            <DebugType>embedded</DebugType>
-        </PropertyGroup>
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginDir)\DEVELOPMENT-BUILD-$(BepInExPluginName)" />
     </Target>
 </Project>
