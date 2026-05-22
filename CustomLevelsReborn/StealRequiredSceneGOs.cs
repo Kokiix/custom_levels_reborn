@@ -8,13 +8,13 @@ static class StealSceneGOs
     static readonly List<string> RequiredGOs = ["GameManager", "NetworkManager", "---USER INTERFACE---", "Main Camera"];
     internal static List<GameObject> SceneGOs = [];
 
-    static Scene mainMenu;
+    static bool stolen = false;
     internal static void OnSceneLoad(Scene s, LoadSceneMode mode)
     {
-        if (s.name == "MainMenu")
+        if (!stolen && s.name == "MainMenu")
         {
-            mainMenu = s;
             SceneManager.LoadSceneAsync(MapToStealFrom, LoadSceneMode.Additive);
+            stolen = true;
         }
         else if (s.name == MapToStealFrom)
         {
