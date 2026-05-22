@@ -9,7 +9,7 @@
         <BepInExPluginVersion>1.0.0</BepInExPluginVersion>
 
         <BepInExPluginDir>C:\Users\koki\AppData\Roaming\com.kesomannen.gale\straftat\profiles\Default\BepInEx\plugins</BepInExPluginDir>
-        <Thunderstore>\.thunderstore</Thunderstore>
+        <Thunderstore>.\.thunderstore</Thunderstore>
     </PropertyGroup>
 
     <ItemGroup>
@@ -31,10 +31,21 @@
         <Reference Include="$(DLLs)\FishNet.Runtime.dll" />
     </ItemGroup>
 
-    <!-- Release -->
-    <Target Name="ReleaseBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Thunderstore)\dist" />
-        <Exec Command="tcli publish --config-path $(Thunderstore)\thunderstore.toml --package-version $(BepInExPluginVersion)" />
+    <ItemGroup>
+        <ModContents Include="$(BepInExPluginDir)\DEVELOPMENT-BUILD-$(BepInExPluginName)\**\*" />
+    </ItemGroup>
+
+    <!-- TCLI stuff -->
+    <Target Name="TCLI" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' Or '$(Configuration)' == 'Build'">
+        <!-- Prepare TCLI -->
+        <RemoveDir Condition="Exists('$(Thunderstore)\dist')" Directories="$(Thunderstore)\dist" />
+        <Copy SourceFiles="@(ModContents)" DestinationFiles="$(Thunderstore)\dist\%(RecursiveDir)%(Filename)%(Extension)" />
+
+        <!-- Publish -->
+        <Exec Condition="'$(Configuration)' == 'Release'" Command="tcli publish --config-path $(Thunderstore)\thunderstore.toml --package-version $(BepInExPluginVersion)" />
+
+        <!-- Build -->
+        <Exec Condition="'$(Configuration)' == 'Build'" Command="tcli build --config-path $(Thunderstore)\thunderstore.toml --package-version $(BepInExPluginVersion)" />
     </Target>
 
     <!-- Debug -->
