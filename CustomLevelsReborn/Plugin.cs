@@ -21,7 +21,7 @@ public class CLRPlugin : BaseUnityPlugin
 
     void Awake()
     {
-        this.gameObject.hideFlags = HideFlags.HideAndDontSave;
+        // this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
         RefreshBundles();
     }
