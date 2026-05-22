@@ -12,16 +12,15 @@ using UnityEngine.SceneManagement;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class CLRPlugin : BaseUnityPlugin
 {
-    internal List<string> ScenePaths = new();
+    internal List<string> ScenePaths = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
     void Awake()
     {
-        _harmony.PatchAll();
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
-
-
+        _harmony.PatchAll();
+        RefreshBundles();
     }
 
     void OnDestroy()
@@ -31,20 +30,22 @@ public class CLRPlugin : BaseUnityPlugin
 
     bool Debug = true; // TODO: replace with system that I won't forget to toggle
     List<string> BundleNames = ["test_map"];
-    private void LoadBundles()
+    private void RefreshBundles()
     {
+        // In hot reload, assembly moves to diff folder
         string bundlePath = Debug ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
 
-        // var sharedAssets = AssetBundle.LoadFromFile(Path.Combine(bundlePath, "shared"));
-        // foreach (var material in sharedAssets.LoadAllAssets<Material>())
-        //     material.shader = Shader.Find(material.shader.name);
-        // SharedBundle = sharedAssets;
-        foreach (var filePath in Directory.GetFiles(bundlePath))
+        // Unload old
+        foreach (var existingBundle in AssetBundle.GetAllLoadedAssetBundles())
         {
-            var fileName = Path.GetFileName(filePath);
-            if (!BundleNames.Contains(fileName) || fileName == "shared") continue;
+            if (BundleNames.Contains(existingBundle.name))
+                existingBundle.Unload(true);
+        }
 
-            var bundle = AssetBundle.LoadFromFile(Path.Combine(bundlePath, fileName));
+        // Load in new
+        foreach (var bundleName in BundleNames)
+        {
+            var bundle = AssetBundle.LoadFromFile(Path.Combine(bundlePath, bundleName));
             foreach (var path in bundle.GetAllScenePaths())
             {
                 ScenePaths.Add(path);
