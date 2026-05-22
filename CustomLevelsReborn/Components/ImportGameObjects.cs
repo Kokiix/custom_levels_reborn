@@ -9,9 +9,10 @@ public class ImportGameObjects : MonoBehaviour
     {
         foreach (var go in StealSceneGOs.SceneGOs)
         {
-            Object.Instantiate(go);
-            go.SetActive(true);
-            go.name = go.name.Replace("(Clone)", "");
+            var newGO = Object.Instantiate(go);
+            newGO.transform.SetParent(transform);
+            newGO.SetActive(true);
+            newGO.name = newGO.name.Replace("(Clone)", "");
         }
     }
 }
