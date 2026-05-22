@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <LangVersion>Latest</LangVersion>
+        <Authors>Koki</Authors>
+
+        <BepInExPluginGuid>com.koki.lvlreborn</BepInExPluginGuid>
+        <BepInExPluginName>Custom Levels Reborn</BepInExPluginName>
+        <BepInExPluginVersion>1.0.0</BepInExPluginVersion>
+
+        <BepInExPluginDir>C:\Users\koki\AppData\Roaming\com.kesomannen.gale\straftat\profiles\Default\BepInEx\plugins</BepInExPluginDir>
+        <Thunderstore>\.thunderstore</Thunderstore>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BepInEx.Analyzers" Version="*" PrivateAssets="all" />
+        <PackageReference Include="BepInEx.Core" Version="*" ExcludeAssets="runtime" />
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="*" PrivateAssets="all" IncludeAssets="build" />
+        <PackageReference Include="BepInEx.PluginInfoProps" Version="*" />
+        <PackageReference Include="UnityEngine.Modules" Version="2021.3.45" IncludeAssets="compile" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!-- Dependencies -->
+    <PropertyGroup>
+        <DLLs>D:\SteamLibrary\steamapps\common\STRAFTAT\STRAFTAT_Data\Managed</DLLs>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="$(DLLs)\Assembly-CSharp.dll" Publicize="true" />
+        <Reference Include="$(DLLs)\ComputerysModdingUtilities.dll" />
+    </ItemGroup>
+
+    <!-- Release -->
+    <Target Name="ReleaseBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Thunderstore)\dist" />
+        <Exec Command="tcli publish --config-path $(Thunderstore)\thunderstore.toml --package-version $(BepInExPluginVersion)" />
+    </Target>
+
+    <!-- Debug -->
+    <Target Name="CopyDLL" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Debug' ">
+        <PropertyGroup>
+            <IncludeSymbols>true</IncludeSymbols>
+            <DebugSymbols>true</DebugSymbols>
+            <DebugType>embedded</DebugType>
+        </PropertyGroup>
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginDir)\DEVELOPMENT-BUILD-$(BepInExPluginName)" />
+    </Target>
+</Project>

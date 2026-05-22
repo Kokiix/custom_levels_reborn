@@ -1,0 +1,6 @@
+bin
+obj
+issues.md
+*.user
+
+.thunderstore
