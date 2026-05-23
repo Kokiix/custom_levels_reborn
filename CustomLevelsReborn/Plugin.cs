@@ -36,35 +36,33 @@ public class CLRPlugin : BaseUnityPlugin
         _harmony.UnpatchSelf();
     }
 
-    bool Debug = false; // TODO: replace with system that I won't forget to toggle
     private void RefreshBundles()
     {
-        // In hot reload, assembly moves to diff folder, hence debug flag 
-        string pluginDir = Debug ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
-        string bundleDir = Path.Combine(pluginDir, "bundles");
+        string myPluginDir = Path.GetDirectoryName(Info.Location);
+        AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared"));
 
-        var bundleNames = Directory.GetFiles(bundleDir).Select(Path.GetFileName);
-
-        // Unload old
-        foreach (var existingBundle in AssetBundle.GetAllLoadedAssetBundles())
+        foreach (var pluginDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
-            if (bundleNames.Contains(existingBundle.name))
-                existingBundle.Unload(true);
-        }
-
-        // Load in new
-        foreach (var bundleName in bundleNames)
-        {
-            var bundle = AssetBundle.LoadFromFile(Path.Combine(bundleDir, bundleName));
-            if (bundleName.EndsWith("_resources"))
+            foreach (var folder in Directory.EnumerateDirectories(pluginDir))
             {
-                // ResourceBundles.Add(bundleName, bundle);
-                MapThumbnails.Add(bundleName, bundle.LoadAsset<Texture2D>("thumbnail"));
+                if (folder == "CustomMaps")
+                {
+                    foreach (var fileName in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                    {
+                        var bundle = AssetBundle.LoadFromFile(fileName);
+                        if (bundle.isStreamedSceneAssetBundle)
+                        {
+                            bundle.GetAllScenePaths()
+                            .Select(Path.GetFileNameWithoutExtension)
+                            .Do(ScenePaths.Add);
+                        }
+                        else if (fileName.EndsWith("_resources"))
+                        {
+                            MapThumbnails.Add(Path.GetFileName(fileName), bundle.LoadAsset<Texture2D>("thumbnail"));
+                        }
+                    }
+                }
             }
-            else if (bundle.isStreamedSceneAssetBundle)
-                bundle.GetAllScenePaths()
-                    .Select(Path.GetFileNameWithoutExtension)
-                    .Do(ScenePaths.Add);
         }
     }
 }
