@@ -63,10 +63,8 @@ static class SetThumbnailAgain
 {
     public static void Postfix(SelectSceneInstance __instance)
     {
-        Debug.LogError(__instance.sprite);
         if (!__instance.sprite)
         {
-            Debug.LogError(__instance.sceneName.ToLower() + "_resources");
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName.ToLower() + "_resources"];
             __instance.mapImg.texture = __instance.sprite;
             __instance.UpdateUI();
