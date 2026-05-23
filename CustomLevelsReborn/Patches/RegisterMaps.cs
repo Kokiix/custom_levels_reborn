@@ -51,7 +51,7 @@ static class SetThumbnail
     {
         if (!__instance.sprite)
         {
-            __instance.sprite = CLRPlugin.MapThumbnails[__instance.name + "_resources"];
+            __instance.sprite = CLRPlugin.MapThumbnails[__instance.name.ToLower() + "_resources"];
             __instance.img.texture = __instance.sprite;
             __instance.UpdateUI();
         }
