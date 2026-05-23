@@ -45,7 +45,7 @@ public class CLRPlugin : BaseUnityPlugin
         {
             foreach (var folder in Directory.EnumerateDirectories(pluginDir))
             {
-                if (folder == "CustomMaps")
+                if (folder.EndsWith("CustomMaps"))
                 {
                     foreach (var fileName in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
                     {
