@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,6 +16,7 @@ using UnityEngine.SceneManagement;
 public class CLRPlugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
+    internal static List<string> MapVersions = [];
     internal static Dictionary<string, string> SceneToBundleDir = [];
     internal static Dictionary<string, Texture2D> MapThumbnails = [];
 
@@ -35,7 +37,7 @@ public class CLRPlugin : BaseUnityPlugin
         _harmony.UnpatchSelf();
     }
 
-    private void LoadBundles()
+    void LoadBundles()
     {
         string myPluginDir = Path.GetDirectoryName(Info.Location);
         AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
@@ -44,9 +46,10 @@ public class CLRPlugin : BaseUnityPlugin
         {
             foreach (var folder in Directory.EnumerateDirectories(pluginDir))
             {
-                Debug.LogError(folder);
                 if (folder.EndsWith("CustomMaps"))
                 {
+                    var pluginVersion = GetPluginVersion(pluginDir);
+
                     foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
                     {
                         var bundle = AssetBundle.LoadFromFile(filePath);
@@ -55,9 +58,13 @@ public class CLRPlugin : BaseUnityPlugin
                             // Technically, I could get the scene data from some metadata file to avoid this load and unload,
                             // but that would require some more work by the user, then reconciling things if that doesn't 
                             // match any actual scene path... At least this loads them one at a time?
-                            bundle.GetAllScenePaths()
-                            .Select(Path.GetFileNameWithoutExtension)
-                            .Do(scene => SceneToBundleDir.Add(scene, filePath));
+                            foreach (var scene in bundle.GetAllScenePaths()
+                            .Select(Path.GetFileNameWithoutExtension))
+                            {
+                                SceneToBundleDir.Add(scene, filePath);
+                                MapVersions.Add(scene + pluginVersion);
+                            }
+
                             bundle.UnloadAsync(false);
                         }
                         else if (filePath.EndsWith("_resources"))
@@ -68,8 +75,38 @@ public class CLRPlugin : BaseUnityPlugin
                             }
                         }
                     }
+
+                    break;
                 }
             }
         }
+
+        Logger.LogInfo("Loaded maps: " + string.Join(", ", MapVersions));
+    }
+
+    [Serializable]
+    public class ThunderstoreManifest
+    {
+        public string name;
+        public string version_number;
+        public string website_url;
+        public string description;
+    }
+
+    string GetPluginVersion(string folder)
+    {
+        string manifestPath = Path.Combine(folder, "manifest.json");
+        try
+        {
+            string jsonText = File.ReadAllText(manifestPath);
+            var manifest = JsonUtility.FromJson<ThunderstoreManifest>(jsonText);
+
+            if (manifest != null && !string.IsNullOrEmpty(manifest.version_number))
+            {
+                return manifest.version_number;
+            }
+        }
+        catch (Exception) { }
+        return "{NO_VERSION_FOUND}";
     }
 }
