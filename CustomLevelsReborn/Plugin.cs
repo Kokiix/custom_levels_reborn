@@ -12,6 +12,7 @@ using UnityEngine.SceneManagement;
 
 [assembly: StraftatMod(isVanillaCompatible: false)]
 
+[BepInDependency(MyceliumNetworking.MyPluginInfo.PLUGIN_GUID)]
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class CLRPlugin : BaseUnityPlugin
 {

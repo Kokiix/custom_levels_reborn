@@ -25,10 +25,13 @@
         <DLLs>D:\SteamLibrary\steamapps\common\STRAFTAT\STRAFTAT_Data\Managed</DLLs>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="straftatmodding-MyceliumNetworking" Version="*" />
+
         <Reference Include="$(DLLs)\Assembly-CSharp.dll" Publicize="true" />
         <Reference Include="$(DLLs)\ComputerysModdingUtilities.dll" />
         <Reference Include="$(DLLs)\UnityEngine.UI.dll" />
         <Reference Include="$(DLLs)\FishNet.Runtime.dll" />
+        <Reference Include="$(DLLs)\com.rlabrecque.steamworks.net.dll" />
     </ItemGroup>
 
     <ItemGroup>
