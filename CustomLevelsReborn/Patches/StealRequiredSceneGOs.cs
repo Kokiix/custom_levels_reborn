@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// No actual patches but this feels like a patch in spirit
+
 static class StealSceneGOs
 {
     static readonly string MapToStealFrom = "TheSamePlace_08";
