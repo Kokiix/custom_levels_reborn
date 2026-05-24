@@ -49,7 +49,7 @@ static class SetThumbnail
     // Similar to above, technically unnecessary UI reload bc I'm lazy
     public static void Postfix(MapInstance __instance)
     {
-        if (!__instance.sprite)
+        if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
         {
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.name];
             __instance.img.texture = __instance.sprite;
@@ -63,7 +63,7 @@ static class SetThumbnailAgain
 {
     public static void Postfix(SelectSceneInstance __instance)
     {
-        if (!__instance.sprite)
+        if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
         {
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
             __instance.mapImg.texture = __instance.sprite;
