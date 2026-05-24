@@ -19,18 +19,34 @@ class SyncMaps : MonoBehaviour
     {
         MyceliumNetwork.RegisterNetworkObject(this, ID);
 
+        MyceliumNetwork.LobbyCreated += ResetMapLists;
         MyceliumNetwork.LobbyEntered += OnLobbyJoin;
         // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
     }
 
+    void ResetMapLists()
+    {
+        mapsToDisable.Clear();
+        customMapsInRotation.Clear();
+    }
+
     void OnLobbyJoin()
     {
-        if (MyceliumNetwork.IsHost) return;
+        if (MyceliumNetwork.IsHost)
+        {
+            allowMidMatchJoin = true;
+            SteamLobby.Instance.OnLobbyEntered(savedCallback);
+            return;
+        }
 
         if (SceneMotor.Instance.currentSceneName == null)
-            TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(",", CLRPlugin.MapVersions)]);
+        {
+            allowMidMatchJoin = true;
+            SteamLobby.Instance.OnLobbyEntered(savedCallback);
+            TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+        }
         else
-            TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(",", CLRPlugin.MapVersions)]);
+            TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
     }
 
     // RE-enabling maps would require keeping track of what players are blocking what maps
@@ -42,7 +58,7 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
     {
-        var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(",")).ToArray();
+        var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
             CLRPlugin.Log.LogWarning($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
@@ -53,7 +69,7 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
     {
-        var nonShared = customMapsInRotation.Except(clientMapString.Split(",")).ToArray();
+        var nonShared = customMapsInRotation.Except(clientMapString.Split(";;")).ToArray();
         var allowJoin = nonShared.Length == 0;
         TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
     }
@@ -68,7 +84,7 @@ class SyncMaps : MonoBehaviour
         }
         else
         {
-            PauseManager.Instance.WriteOfflineLog("Failed to join lobby: Your custom map list is incompatible with the one being played.");
+            PauseManager.Instance.ShowInfoPopup("Failed to join lobby: Your custom map list is incompatible with the one being played.");
             SteamLobby.Instance.LeaveLobby();
             return;
         }
@@ -83,14 +99,14 @@ class SyncMaps : MonoBehaviour
             {
                 if (mapsToDisable.Contains(map))
                 {
-                    return false;
+                    return true;
                 }
                 else if (CLRPlugin.SceneToBundleDir.Keys.Contains(map))
                 {
                     customMapsInRotation.Add(map);
                 }
 
-                return true;
+                return false;
             });
         }
     }
@@ -100,11 +116,11 @@ class SyncMaps : MonoBehaviour
     static class BlockDefaultMidMatchJoin
     {
 
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             var allowJoinField = AccessTools.Field(typeof(SyncMaps), "allowMidMatchJoin");
 
-            return new CodeMatcher(instructions)
+            return new CodeMatcher(instructions, generator)
             .End().CreateLabel(out Label ret)
             .Start()
             .Insert(
