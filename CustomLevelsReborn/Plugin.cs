@@ -15,9 +15,8 @@ using UnityEngine.SceneManagement;
 public class CLRPlugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
-    internal static List<string> ScenePaths = [];
+    internal static Dictionary<string, string> SceneToBundleDir = [];
     internal static Dictionary<string, Texture2D> MapThumbnails = [];
-    // internal static Dictionary<string, AssetBundle> ResourceBundles = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -47,18 +46,25 @@ public class CLRPlugin : BaseUnityPlugin
             {
                 if (folder.EndsWith("CustomMaps"))
                 {
-                    foreach (var fileName in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                    foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
                     {
-                        var bundle = AssetBundle.LoadFromFile(fileName);
+                        var bundle = AssetBundle.LoadFromFile(filePath);
                         if (bundle.isStreamedSceneAssetBundle)
                         {
+                            // Technically, I could get the scene data from some metadata file to avoid this load and unload,
+                            // but that would require some more work by the user, then reconciling things if that doesn't 
+                            // match any actual scene path... At least this loads them one at a time?
                             bundle.GetAllScenePaths()
                             .Select(Path.GetFileNameWithoutExtension)
-                            .Do(ScenePaths.Add);
+                            .Do(scene => SceneToBundleDir.Add(scene, filePath));
+                            bundle.Unload(true);
                         }
-                        else if (fileName.EndsWith("_resources"))
+                        else if (filePath.EndsWith("_resources"))
                         {
-                            MapThumbnails.Add(Path.GetFileName(fileName), bundle.LoadAsset<Texture2D>("thumbnail"));
+                            foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
+                            {
+                                MapThumbnails.Add(tnail.name, tnail);
+                            }
                         }
                     }
                 }

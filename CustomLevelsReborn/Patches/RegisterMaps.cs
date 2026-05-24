@@ -17,7 +17,7 @@ static class RegisterScenes
         var customMapList = new List<Map>();
 
         var idx = __instance.allMaps.Length;
-        foreach (var path in CLRPlugin.ScenePaths)
+        foreach (var path in CLRPlugin.SceneToBundleDir.Keys)
         {
             var map = new Map
             {
@@ -51,7 +51,7 @@ static class SetThumbnail
     {
         if (!__instance.sprite)
         {
-            __instance.sprite = CLRPlugin.MapThumbnails[__instance.name.ToLower() + "_resources"];
+            __instance.sprite = CLRPlugin.MapThumbnails[__instance.name];
             __instance.img.texture = __instance.sprite;
             __instance.UpdateUI();
         }
@@ -65,7 +65,7 @@ static class SetThumbnailAgain
     {
         if (!__instance.sprite)
         {
-            __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName.ToLower() + "_resources"];
+            __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
             __instance.mapImg.texture = __instance.sprite;
             __instance.UpdateUI();
         }
