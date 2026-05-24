@@ -18,17 +18,32 @@ class SyncMaps : MonoBehaviour
         MyceliumNetwork.RegisterNetworkObject(this, ID);
 
         MyceliumNetwork.LobbyEntered += OnLobbyJoin;
-        MyceliumNetwork.LobbyLeft += OnLobbyLeave;
+        // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
     }
 
     void OnLobbyJoin()
     {
+        Debug.LogError(SceneMotor.Instance.currentSceneName);
+        if (MyceliumNetwork.IsHost) return;
 
+        // if () // is in lobby
+        //     TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(",", CLRPlugin.MapVersions)]);
     }
 
-    void OnLobbyLeave()
-    {
+    // void OnLobbyLeave()
+    // {
 
+    // }
+
+    [CustomRPC]
+    void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
+    {
+        var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(",")).ToArray();
+        if (nonShared.Length > 0)
+        {
+            CLRPlugin.Log.LogWarning($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
+            mapsToDisable.AddRange(nonShared);
+        }
     }
 
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
@@ -38,18 +53,28 @@ class SyncMaps : MonoBehaviour
         {
             __instance.PlayListMaps.RemoveAll(map =>
             {
-                return false;
+                if (mapsToDisable.Contains(map))
+                {
+                    return false;
+                }
+                else if (CLRPlugin.SceneToBundleDir.Keys.Contains(map))
+                {
+                    customMapsInRotation.Add(map);
+                }
+
+                return true;
             });
         }
     }
 
-    // static void RPC(string methodname, object[] parameters)
-    // {
-    //     MyceliumNetwork.RPC(
-    //         ID,
-    //         methodname,
-    //         ReliableType.Reliable,
-    //         parameters
-    //     );
-    // }
+    static void TargetedRPC(CSteamID target, string methodname, object[] parameters)
+    {
+        MyceliumNetwork.RPCTarget(
+            ID,
+            methodname,
+            target,
+            ReliableType.Reliable,
+            parameters
+        );
+    }
 }
