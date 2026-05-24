@@ -66,7 +66,7 @@ public class CLRPlugin : BaseUnityPlugin
                             .Select(Path.GetFileNameWithoutExtension))
                             {
                                 SceneToBundleDir.Add(scene, filePath);
-                                MapVersions.Add(scene + pluginVersion);
+                                MapVersions.Add(scene + "v" + pluginVersion);
                             }
 
                             bundle.UnloadAsync(false);

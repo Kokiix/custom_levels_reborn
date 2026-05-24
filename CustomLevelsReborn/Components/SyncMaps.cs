@@ -34,8 +34,6 @@ class SyncMaps : MonoBehaviour
     {
         if (MyceliumNetwork.IsHost)
         {
-            allowMidMatchJoin = true;
-            SteamLobby.Instance.OnLobbyEntered(savedCallback);
             return;
         }
 
@@ -116,15 +114,21 @@ class SyncMaps : MonoBehaviour
     static class BlockDefaultMidMatchJoin
     {
 
+        static bool IsJoinAllowed()
+        {
+            if (MyceliumNetwork.IsHost) return true;
+            return allowMidMatchJoin;
+        }
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
-            var allowJoinField = AccessTools.Field(typeof(SyncMaps), "allowMidMatchJoin");
+            var isJoinAllowed = AccessTools.Method(typeof(BlockDefaultMidMatchJoin), "IsJoinAllowed");
 
             return new CodeMatcher(instructions, generator)
             .End().CreateLabel(out Label ret)
             .Start()
             .Insert(
-                new CodeInstruction(OpCodes.Ldsfld, allowJoinField),
+                new CodeInstruction(OpCodes.Call, isJoinAllowed),
                 new CodeInstruction(OpCodes.Brfalse, ret))
             .InstructionEnumeration();
         }
