@@ -26,7 +26,7 @@ public class CLRPlugin : BaseUnityPlugin
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
 
-        RefreshBundles();
+        LoadBundles();
         SceneManager.sceneLoaded += StealSceneGOs.OnSceneLoad;
     }
 
@@ -35,15 +35,16 @@ public class CLRPlugin : BaseUnityPlugin
         _harmony.UnpatchSelf();
     }
 
-    private void RefreshBundles()
+    private void LoadBundles()
     {
         string myPluginDir = Path.GetDirectoryName(Info.Location);
-        AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared"));
+        AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
 
         foreach (var pluginDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
             foreach (var folder in Directory.EnumerateDirectories(pluginDir))
             {
+                Debug.LogError(folder);
                 if (folder.EndsWith("CustomMaps"))
                 {
                     foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
@@ -57,7 +58,7 @@ public class CLRPlugin : BaseUnityPlugin
                             bundle.GetAllScenePaths()
                             .Select(Path.GetFileNameWithoutExtension)
                             .Do(scene => SceneToBundleDir.Add(scene, filePath));
-                            bundle.Unload(true);
+                            bundle.UnloadAsync(false);
                         }
                         else if (filePath.EndsWith("_resources"))
                         {
