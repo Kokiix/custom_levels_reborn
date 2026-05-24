@@ -30,6 +30,9 @@ public class CLRPlugin : BaseUnityPlugin
         _harmony.PatchAll();
 
         LoadBundles();
+
+        gameObject.AddComponent<SyncMaps>();
+
         SceneManager.sceneLoaded += StealSceneGOs.OnSceneLoad;
     }
 

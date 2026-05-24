@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using HarmonyLib;
 using MyceliumNetworking;
 using Steamworks;
@@ -12,6 +13,7 @@ class SyncMaps : MonoBehaviour
 
     static List<string> mapsToDisable = [];
     static List<string> customMapsInRotation = [];
+    static bool allowMidMatchJoin = false;
 
     internal void Awake()
     {
@@ -23,13 +25,15 @@ class SyncMaps : MonoBehaviour
 
     void OnLobbyJoin()
     {
-        Debug.LogError(SceneMotor.Instance.currentSceneName);
         if (MyceliumNetwork.IsHost) return;
 
-        // if () // is in lobby
-        //     TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(",", CLRPlugin.MapVersions)]);
+        if (SceneMotor.Instance.currentSceneName == null)
+            TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(",", CLRPlugin.MapVersions)]);
+        else
+            TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(",", CLRPlugin.MapVersions)]);
     }
 
+    // RE-enabling maps would require keeping track of what players are blocking what maps
     // void OnLobbyLeave()
     // {
 
@@ -43,6 +47,30 @@ class SyncMaps : MonoBehaviour
         {
             CLRPlugin.Log.LogWarning($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
             mapsToDisable.AddRange(nonShared);
+        }
+    }
+
+    [CustomRPC]
+    void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
+    {
+        var nonShared = customMapsInRotation.Except(clientMapString.Split(",")).ToArray();
+        var allowJoin = nonShared.Length == 0;
+        TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
+    }
+
+    [CustomRPC]
+    void AllowMidMatchJoin(bool isAllowed)
+    {
+        if (isAllowed)
+        {
+            allowMidMatchJoin = true;
+            SteamLobby.Instance.OnLobbyEntered(savedCallback);
+        }
+        else
+        {
+            PauseManager.Instance.WriteOfflineLog("Failed to join lobby: Your custom map list is incompatible with the one being played.");
+            SteamLobby.Instance.LeaveLobby();
+            return;
         }
     }
 
@@ -64,6 +92,31 @@ class SyncMaps : MonoBehaviour
 
                 return true;
             });
+        }
+    }
+
+    static LobbyEnter_t savedCallback;
+    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
+    static class BlockDefaultMidMatchJoin
+    {
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var allowJoinField = AccessTools.Field(typeof(SyncMaps), "allowMidMatchJoin");
+
+            return new CodeMatcher(instructions)
+            .End().CreateLabel(out Label ret)
+            .Start()
+            .Insert(
+                new CodeInstruction(OpCodes.Ldsfld, allowJoinField),
+                new CodeInstruction(OpCodes.Brfalse, ret))
+            .InstructionEnumeration();
+        }
+
+        static void Postfix(LobbyEnter_t callback)
+        {
+            savedCallback = callback;
+            allowMidMatchJoin = false;
         }
     }
 
