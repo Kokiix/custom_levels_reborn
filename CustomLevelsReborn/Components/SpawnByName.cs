@@ -97,8 +97,9 @@ public class CustomSpawner : MonoBehaviour
             SpawnerManager.PopulateAllWeapons();
         }
 
-        var spawner = gameObject.AddComponent<ItemSpawner>();
+        var spawner = gameObject.GetComponent<ItemSpawner>();
         spawner.itemToSpawn = SpawnerManager.NameToWeaponDict[weaponString];
         spawner.weaponRespawnTimeInSeconds = _weaponRespawnTimeInSeconds;
+        spawner.gameObject.SetActive(true);
     }
 }
