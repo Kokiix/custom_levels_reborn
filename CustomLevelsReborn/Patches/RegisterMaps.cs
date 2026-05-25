@@ -51,7 +51,6 @@ static class SetThumbnail
     {
         if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
         {
-            Debug.LogError("recon thumbnail: " + __instance.name);
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.name];
             __instance.img.texture = __instance.sprite;
             __instance.UpdateUI();
@@ -64,9 +63,8 @@ static class SetThumbnailAgain
 {
     public static void Postfix(SelectSceneInstance __instance)
     {
-        if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
+        if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.sceneName))
         {
-            Debug.LogError("lobby thumbnail: " + __instance.sceneName);
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
             __instance.mapImg.texture = __instance.sprite;
             __instance.UpdateUI();
