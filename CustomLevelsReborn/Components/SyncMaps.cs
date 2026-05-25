@@ -30,7 +30,7 @@ class SyncMaps : MonoBehaviour
         customMapsInRotation.Clear();
     }
 
-    void DetermineMidMatchJoin()
+    static void DetermineMidMatchJoin()
     {
         if (MyceliumNetwork.IsHost || SceneMotor.Instance == null)
         {
@@ -64,13 +64,15 @@ class SyncMaps : MonoBehaviour
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
+            var setClientAddress = AccessTools.Method(typeof(Transport), "SetClientAddress");
             var determineMidMatchJoin = AccessTools.Method(typeof(SyncMaps), "DetermineMidMatchJoin");
 
             return new CodeMatcher(instructions)
             .MatchForward(useEnd: true,
-            new CodeMatch(OpCodes.Callvirt, determineMidMatchJoin),
+            new CodeMatch(OpCodes.Callvirt, setClientAddress),
             new CodeMatch(OpCodes.Ldarg_0))
             .Insert(
+                new CodeInstruction(OpCodes.Call, determineMidMatchJoin),
                 new CodeInstruction(OpCodes.Ret))
             .InstructionEnumeration();
         }
@@ -89,6 +91,7 @@ class SyncMaps : MonoBehaviour
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
+            Debug.LogError($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
             mapsToDisable.AddRange(nonShared);
         }
