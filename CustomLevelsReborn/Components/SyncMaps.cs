@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
+using FishNet.Transporting;
 using HarmonyLib;
 using MyceliumNetworking;
 using Steamworks;
@@ -13,7 +14,6 @@ class SyncMaps : MonoBehaviour
 
     static List<string> mapsToDisable = [];
     static List<string> customMapsInRotation = [];
-    static bool allowMidMatchJoin = false;
 
     internal void Awake()
     {
@@ -30,6 +30,46 @@ class SyncMaps : MonoBehaviour
         customMapsInRotation.Clear();
     }
 
+    void JoinFishnet()
+    {
+        Debug.LogError("manually join fishnet");
+        if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
+        {
+            SteamLobby.Instance.inSteamLobby = true;
+        }
+        else
+        {
+            Debug.LogError("CONNECTION FAILED");
+            SteamLobby.Instance.LeaveLobby();
+        }
+    }
+
+    [HarmonyPatch(typeof(FishySteamworks.FishySteamworks), "StartConnection")]
+    static class Test
+    {
+        static void Postfix(bool server)
+        {
+            Debug.LogError("fishnet connect from " + server);
+        }
+    }
+
+    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
+    static class BlockDefaultMidMatchJoin
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var setClientAddress = AccessTools.Field(typeof(Transport), "SetClientAddress");
+
+            return new CodeMatcher(instructions)
+            .MatchForward(useEnd: true,
+            new CodeMatch(OpCodes.Callvirt, setClientAddress),
+            new CodeMatch(OpCodes.Ldarg_0))
+            .Insert(
+                new CodeInstruction(OpCodes.Ret))
+            .InstructionEnumeration();
+        }
+    }
+
     void OnLobbyJoin()
     {
         if (MyceliumNetwork.IsHost)
@@ -41,13 +81,11 @@ class SyncMaps : MonoBehaviour
         if (SceneMotor.Instance.currentSceneName == null)
         {
             Debug.LogError("lobby join");
-            allowMidMatchJoin = true;
-            SteamLobby.Instance.OnLobbyEntered(savedCallback);
+            JoinFishnet();
             TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
         }
         else
         {
-
             Debug.LogError("mid game join");
             TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
         }
@@ -86,8 +124,7 @@ class SyncMaps : MonoBehaviour
         Debug.LogError("client: receiving mid match join eligibility");
         if (isAllowed)
         {
-            allowMidMatchJoin = true;
-            SteamLobby.Instance.OnLobbyEntered(savedCallback);
+            JoinFishnet();
         }
         else
         {
@@ -115,38 +152,6 @@ class SyncMaps : MonoBehaviour
 
                 return false;
             });
-        }
-    }
-
-    static LobbyEnter_t savedCallback;
-    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
-    static class BlockDefaultMidMatchJoin
-    {
-
-        static bool IsJoinAllowed()
-        {
-            if (MyceliumNetwork.IsHost) return true;
-            Debug.LogError("allowed to join: " + allowMidMatchJoin);
-            return allowMidMatchJoin;
-        }
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
-        {
-            var isJoinAllowed = AccessTools.Method(typeof(BlockDefaultMidMatchJoin), "IsJoinAllowed");
-
-            return new CodeMatcher(instructions, generator)
-            .End().CreateLabel(out Label ret)
-            .Start()
-            .Insert(
-                new CodeInstruction(OpCodes.Call, isJoinAllowed),
-                new CodeInstruction(OpCodes.Brfalse, ret))
-            .InstructionEnumeration();
-        }
-
-        static void Postfix(LobbyEnter_t callback)
-        {
-            savedCallback = callback;
-            allowMidMatchJoin = false;
         }
     }
 
