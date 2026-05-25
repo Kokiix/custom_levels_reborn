@@ -84,12 +84,9 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
     {
-        Debug.LogError("client maps: " + clientMapString);
-        Debug.LogError("host maps: " + CLRPlugin.MapVersions.ToString());
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
-            nonShared.Do(Debug.LogError);
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
 
             var versionStrippedMaps = nonShared.Select(map => map.Substring(0, map.LastIndexOf("-")));
@@ -102,7 +99,6 @@ class SyncMaps : MonoBehaviour
     {
         static void Prefix(SceneMotor __instance)
         {
-            mapsToDisable.Do(Debug.LogError);
             __instance.PlayListMaps.RemoveAll(map =>
             {
                 if (mapsToDisable.Contains(map))

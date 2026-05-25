@@ -49,9 +49,9 @@ static class SetThumbnail
     // Similar to above, technically unnecessary UI reload bc I'm lazy
     public static void Postfix(MapInstance __instance)
     {
-        Debug.LogError(__instance.name);
         if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
         {
+            Debug.LogError("recon thumbnail: " + __instance.name);
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.name];
             __instance.img.texture = __instance.sprite;
             __instance.UpdateUI();
@@ -64,9 +64,9 @@ static class SetThumbnailAgain
 {
     public static void Postfix(SelectSceneInstance __instance)
     {
-        Debug.LogError(__instance.sceneName);
         if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.name))
         {
+            Debug.LogError("lobby thumbnail: " + __instance.sceneName);
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
             __instance.mapImg.texture = __instance.sprite;
             __instance.UpdateUI();

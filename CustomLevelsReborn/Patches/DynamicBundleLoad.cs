@@ -9,24 +9,42 @@ using FishNet.Managing.Scened;
 using HarmonyLib;
 using UnityEngine;
 
+static class BundleLoad
+{
+    static AssetBundle bundleRef;
+    static string lastScene;
+
+
+    internal static void Start(string sceneName)
+    {
+        Debug.LogError("loding!");
+        Debug.LogError(lastScene);
+        Debug.LogError(sceneName);
+        if (lastScene == sceneName) return;
+        lastScene = sceneName;
+
+        if (bundleRef)
+        {
+            bundleRef.UnloadAsync(false);
+            bundleRef = null;
+        }
+
+        if (CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
+        {
+            bundleRef = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[sceneName]);
+        }
+    }
+}
+
 static class MultiplayerBundleLoad
 {
-    static AssetBundle bundle;
     [HarmonyPatch(typeof(SceneMotor), "GetNextMap")]
     static class LoadHost
     {
         static void Postfix(string __result)
         {
-            if (bundle)
-            {
-                bundle.UnloadAsync(false);
-                bundle = null;
-            }
-
-            if (CLRPlugin.SceneToBundleDir.ContainsKey(__result))
-            {
-                bundle = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[__result]);
-            }
+            Debug.LogError("loading from scenemotor");
+            BundleLoad.Start(__result);
         }
     }
 
@@ -35,16 +53,8 @@ static class MultiplayerBundleLoad
     {
         static void Prefix(string sceneName)
         {
-            if (bundle)
-            {
-                bundle.UnloadAsync(false);
-                bundle = null;
-            }
-
-            if (CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
-            {
-                bundle = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[sceneName]);
-            }
+            Debug.LogError("loading from fishnet");
+            BundleLoad.Start(sceneName);
         }
     }
 }
@@ -52,19 +62,9 @@ static class MultiplayerBundleLoad
 [HarmonyPatch(typeof(SceneMotor), "RpcLogic___EnterScene_3615296227")]
 static class SingleplayerBundleLoad
 {
-    static void Prefix(string sceneName, ref AssetBundle __state)
+    static void Prefix(string sceneName)
     {
-        if (CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
-        {
-            __state = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[sceneName]);
-        }
-    }
-
-    static void Postfix(AssetBundle __state)
-    {
-        if (__state)
-        {
-            __state.UnloadAsync(false);
-        }
+        Debug.LogError("loading from recon");
+        BundleLoad.Start(sceneName);
     }
 }

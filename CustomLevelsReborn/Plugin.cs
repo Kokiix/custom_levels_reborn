@@ -70,7 +70,7 @@ public class CLRPlugin : BaseUnityPlugin
                                 MapVersions.Add(scene + "-v" + pluginVersion);
                             }
 
-                            bundle.UnloadAsync(false);
+                            bundle.Unload(true);
                         }
                         else if (filePath.EndsWith("_resources"))
                         {
