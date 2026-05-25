@@ -19,8 +19,8 @@ class SyncMaps : MonoBehaviour
     {
         MyceliumNetwork.RegisterNetworkObject(this, ID);
 
+        MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
-        MyceliumNetwork.LobbyEntered += OnLobbyJoin;
         // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
     }
 
@@ -30,65 +30,49 @@ class SyncMaps : MonoBehaviour
         customMapsInRotation.Clear();
     }
 
-    void JoinFishnet()
+    void DetermineMidMatchJoin()
     {
-        Debug.LogError("manually join fishnet");
-        if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
+        if (MyceliumNetwork.IsHost || SceneMotor.Instance == null)
         {
-            SteamLobby.Instance.inSteamLobby = true;
-        }
-        else
-        {
-            Debug.LogError("CONNECTION FAILED");
-            SteamLobby.Instance.LeaveLobby();
-        }
-    }
-
-    [HarmonyPatch(typeof(FishySteamworks.FishySteamworks), "StartConnection")]
-    static class Test
-    {
-        static void Postfix(bool server)
-        {
-            Debug.LogError("fishnet connect from " + server);
-        }
-    }
-
-    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
-    static class BlockDefaultMidMatchJoin
-    {
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var setClientAddress = AccessTools.Method(typeof(Transport), "SetClientAddress");
-
-            return new CodeMatcher(instructions)
-            .MatchForward(useEnd: true,
-            new CodeMatch(OpCodes.Callvirt, setClientAddress),
-            new CodeMatch(OpCodes.Ldarg_0))
-            .Insert(
-                new CodeInstruction(OpCodes.Ret))
-            .InstructionEnumeration();
-        }
-    }
-
-    void OnLobbyJoin()
-    {
-        if (MyceliumNetwork.IsHost)
-        {
-            JoinFishnet();
-            return;
-        }
-
-        Debug.LogError("joining");
-        if (SceneMotor.Instance == null)
-        {
-            Debug.LogError("lobby join");
-            JoinFishnet();
-            TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+            if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
+            {
+                Debug.LogError("lobby join");
+                SteamLobby.Instance.inSteamLobby = true;
+                TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+            }
+            else
+            {
+                Debug.LogError("Failed to start FishySteamworks connection");
+                SteamLobby.Instance.LeaveLobby();
+            }
         }
         else
         {
             Debug.LogError("mid game join");
-            TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
+            var maps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
+            if (maps != CLRPlugin.MapVersions.ToArray())
+            {
+                PauseManager.Instance.ShowInfoPopup("You are missing maps currently being used in this lobby!");
+                SteamLobby.Instance.LeaveLobby();
+            }
+            // TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
+        }
+    }
+
+    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
+    static class HandleLobbyEnter
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var determineMidMatchJoin = AccessTools.Method(typeof(SyncMaps), "DetermineMidMatchJoin");
+
+            return new CodeMatcher(instructions)
+            .MatchForward(useEnd: true,
+            new CodeMatch(OpCodes.Callvirt, determineMidMatchJoin),
+            new CodeMatch(OpCodes.Ldarg_0))
+            .Insert(
+                new CodeInstruction(OpCodes.Ret))
+            .InstructionEnumeration();
         }
     }
 
@@ -105,35 +89,35 @@ class SyncMaps : MonoBehaviour
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
-            CLRPlugin.Log.LogWarning($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
+            PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
             mapsToDisable.AddRange(nonShared);
         }
     }
 
-    [CustomRPC]
-    void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
-    {
-        Debug.LogError("host: determining mid match join eligibility");
-        var nonShared = customMapsInRotation.Except(clientMapString.Split(";;")).ToArray();
-        var allowJoin = nonShared.Length == 0;
-        TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
-    }
+    // [CustomRPC]
+    // void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
+    // {
+    //     Debug.LogError("host: determining mid match join eligibility");
+    //     var nonShared = customMapsInRotation.Except(clientMapString.Split(";;")).ToArray();
+    //     var allowJoin = nonShared.Length == 0;
+    //     TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
+    // }
 
-    [CustomRPC]
-    void AllowMidMatchJoin(bool isAllowed)
-    {
-        Debug.LogError("client: receiving mid match join eligibility");
-        if (isAllowed)
-        {
-            JoinFishnet();
-        }
-        else
-        {
-            PauseManager.Instance.ShowInfoPopup("Failed to join lobby: Your custom map list is incompatible with the one being played.");
-            SteamLobby.Instance.LeaveLobby();
-            return;
-        }
-    }
+    // [CustomRPC]
+    // void AllowMidMatchJoin(bool isAllowed)
+    // {
+    //     Debug.LogError("client: receiving mid match join eligibility");
+    //     if (isAllowed)
+    //     {
+    //         JoinFishnet();
+    //     }
+    //     else
+    //     {
+    //         PauseManager.Instance.ShowInfoPopup("Failed to join lobby: Your custom map list is incompatible with the one being played.");
+    //         SteamLobby.Instance.LeaveLobby();
+    //         return;
+    //     }
+    // }
 
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
     static class DisableMapsOnGameStart
@@ -153,6 +137,8 @@ class SyncMaps : MonoBehaviour
 
                 return false;
             });
+
+            MyceliumNetwork.SetLobbyData("MapsInRotation", string.Join(";", customMapsInRotation));
         }
     }
 
