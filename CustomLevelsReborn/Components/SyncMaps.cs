@@ -37,14 +37,20 @@ class SyncMaps : MonoBehaviour
             return;
         }
 
+        Debug.LogError("joining");
         if (SceneMotor.Instance.currentSceneName == null)
         {
+            Debug.LogError("lobby join");
             allowMidMatchJoin = true;
             SteamLobby.Instance.OnLobbyEntered(savedCallback);
             TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
         }
         else
+        {
+
+            Debug.LogError("mid game join");
             TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
+        }
     }
 
     // RE-enabling maps would require keeping track of what players are blocking what maps
@@ -56,6 +62,7 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
     {
+        Debug.LogError("host: received disable rpc");
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
@@ -67,6 +74,7 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
     {
+        Debug.LogError("host: determining mid match join eligibility");
         var nonShared = customMapsInRotation.Except(clientMapString.Split(";;")).ToArray();
         var allowJoin = nonShared.Length == 0;
         TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
@@ -75,6 +83,7 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void AllowMidMatchJoin(bool isAllowed)
     {
+        Debug.LogError("client: receiving mid match join eligibility");
         if (isAllowed)
         {
             allowMidMatchJoin = true;
@@ -117,6 +126,7 @@ class SyncMaps : MonoBehaviour
         static bool IsJoinAllowed()
         {
             if (MyceliumNetwork.IsHost) return true;
+            Debug.LogError("allowed to join: " + allowMidMatchJoin);
             return allowMidMatchJoin;
         }
 
