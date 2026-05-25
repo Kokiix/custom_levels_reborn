@@ -6,7 +6,7 @@
 
         <BepInExPluginGuid>com.koki.lvlreborn</BepInExPluginGuid>
         <BepInExPluginName>Custom Levels Reborn</BepInExPluginName>
-        <BepInExPluginVersion>0.1.0</BepInExPluginVersion>
+        <BepInExPluginVersion>0.1.1</BepInExPluginVersion>
 
         <BepInExPluginDir>C:\Users\koki\AppData\Roaming\com.kesomannen.gale\straftat\profiles\Default\BepInEx\plugins</BepInExPluginDir>
         <Thunderstore>.\.thunderstore</Thunderstore>

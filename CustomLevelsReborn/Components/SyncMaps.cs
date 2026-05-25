@@ -36,7 +36,6 @@ class SyncMaps : MonoBehaviour
         {
             if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
             {
-                Debug.LogError("lobby join");
                 SteamLobby.Instance.inSteamLobby = true;
                 TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
             }
@@ -48,14 +47,12 @@ class SyncMaps : MonoBehaviour
         }
         else
         {
-            Debug.LogError("mid game join");
             var maps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
-            if (maps != CLRPlugin.MapVersions.ToArray())
+            if (maps.ToHashSet().SetEquals(CLRPlugin.MapVersions.ToHashSet()))
             {
                 PauseManager.Instance.ShowInfoPopup("You are missing maps currently being used in this lobby!");
                 SteamLobby.Instance.LeaveLobby();
             }
-            // TargetedRPC(MyceliumNetwork.LobbyHost, "EvalMidMatchJoin", [string.Join(";;", CLRPlugin.MapVersions)]);
         }
     }
 
@@ -87,40 +84,15 @@ class SyncMaps : MonoBehaviour
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
     {
-        Debug.LogError("host: received disable rpc");
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
-            Debug.LogError($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
-            mapsToDisable.AddRange(nonShared);
+
+            var versionStrippedMaps = nonShared.Select(map => map.Substring(0, map.LastIndexOf("-")));
+            mapsToDisable.AddRange(versionStrippedMaps);
         }
     }
-
-    // [CustomRPC]
-    // void EvalMidMatchJoin(string clientMapString, RPCInfo sender)
-    // {
-    //     Debug.LogError("host: determining mid match join eligibility");
-    //     var nonShared = customMapsInRotation.Except(clientMapString.Split(";;")).ToArray();
-    //     var allowJoin = nonShared.Length == 0;
-    //     TargetedRPC(sender.SenderSteamID, "AllowMidMatchJoin", [allowJoin]);
-    // }
-
-    // [CustomRPC]
-    // void AllowMidMatchJoin(bool isAllowed)
-    // {
-    //     Debug.LogError("client: receiving mid match join eligibility");
-    //     if (isAllowed)
-    //     {
-    //         JoinFishnet();
-    //     }
-    //     else
-    //     {
-    //         PauseManager.Instance.ShowInfoPopup("Failed to join lobby: Your custom map list is incompatible with the one being played.");
-    //         SteamLobby.Instance.LeaveLobby();
-    //         return;
-    //     }
-    // }
 
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
     static class DisableMapsOnGameStart
