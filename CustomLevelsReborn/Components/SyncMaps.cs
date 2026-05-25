@@ -58,7 +58,7 @@ class SyncMaps : MonoBehaviour
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            var setClientAddress = AccessTools.Field(typeof(Transport), "SetClientAddress");
+            var setClientAddress = AccessTools.Method(typeof(Transport), "SetClientAddress");
 
             return new CodeMatcher(instructions)
             .MatchForward(useEnd: true,
@@ -74,11 +74,12 @@ class SyncMaps : MonoBehaviour
     {
         if (MyceliumNetwork.IsHost)
         {
+            JoinFishnet();
             return;
         }
 
         Debug.LogError("joining");
-        if (SceneMotor.Instance.currentSceneName == null)
+        if (SceneMotor.Instance == null)
         {
             Debug.LogError("lobby join");
             JoinFishnet();

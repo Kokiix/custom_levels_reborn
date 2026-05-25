@@ -7,6 +7,7 @@ using BepInEx.Logging;
 using ComputerysModdingUtilities;
 using CustomLevelsReborn;
 using HarmonyLib;
+using HarmonyLib.Tools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -66,7 +67,7 @@ public class CLRPlugin : BaseUnityPlugin
                             .Select(Path.GetFileNameWithoutExtension))
                             {
                                 SceneToBundleDir.Add(scene, filePath);
-                                MapVersions.Add(scene + "v" + pluginVersion);
+                                MapVersions.Add(scene + "-v" + pluginVersion);
                             }
 
                             bundle.UnloadAsync(false);
