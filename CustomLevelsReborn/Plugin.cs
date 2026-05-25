@@ -45,7 +45,8 @@ public class CLRPlugin : BaseUnityPlugin
     void LoadBundles()
     {
         string myPluginDir = Path.GetDirectoryName(Info.Location);
-        AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
+        var shared = AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
+        SwapShaders(shared);
 
         foreach (var pluginDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
@@ -74,6 +75,7 @@ public class CLRPlugin : BaseUnityPlugin
                         }
                         else if (filePath.EndsWith("_resources"))
                         {
+                            SwapShaders(bundle);
                             foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
                             {
                                 MapThumbnails.Add(tnail.name, tnail);
@@ -113,5 +115,23 @@ public class CLRPlugin : BaseUnityPlugin
         }
         catch (Exception) { }
         return "{NO_VERSION_FOUND}";
+    }
+
+    /// <summary>
+    /// Shaders compile differently depending on if the bundle target is set to Windows or Linux, because of Vulkan vs OpenGL. 
+    /// Swapping shaders at runtime is an lazy way to fix it :p
+    /// </summary>
+    /// <param name="bundle"></param>
+    void SwapShaders(AssetBundle bundle)
+    {
+        foreach (var mat in bundle.LoadAllAssets<Material>())
+        {
+            var existingShader = mat.shader;
+            var inGameShader = Shader.Find(existingShader.name);
+            if (inGameShader)
+            {
+                mat.shader = inGameShader;
+            }
+        }
     }
 }
