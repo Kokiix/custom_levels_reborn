@@ -13,10 +13,16 @@ static class MultiplayerBundleLoad
 {
     static AssetBundle bundle;
     [HarmonyPatch(typeof(SceneMotor), "GetNextMap")]
-    static class Load
+    static class LoadHost
     {
         static void Postfix(string __result)
         {
+            if (bundle)
+            {
+                bundle.UnloadAsync(false);
+                bundle = null;
+            }
+
             if (CLRPlugin.SceneToBundleDir.ContainsKey(__result))
             {
                 bundle = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[__result]);
@@ -24,17 +30,21 @@ static class MultiplayerBundleLoad
         }
     }
 
-    [HarmonyPatch(typeof(SceneManager), "LoadGlobalScenes")]
-    static class Unload
+    [HarmonyPatch(typeof(DefaultSceneProcessor), "BeginLoadAsync")]
+    static class LoadClient
     {
-        static void Postfix()
+        static void Prefix(string sceneName)
         {
             if (bundle)
             {
                 bundle.UnloadAsync(false);
+                bundle = null;
             }
 
-            bundle = null;
+            if (CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
+            {
+                bundle = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[sceneName]);
+            }
         }
     }
 }
