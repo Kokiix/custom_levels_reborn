@@ -20,15 +20,26 @@ class SyncMaps : MonoBehaviour
         MyceliumNetwork.RegisterNetworkObject(this, ID);
 
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
-        MyceliumNetwork.RegisterLobbyDataKey("InLobby");
+        MyceliumNetwork.RegisterLobbyDataKey("GameStarted");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
         // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
+
+        SceneManager.sceneLoaded += ResetLobbyKey;
+    }
+
+    void ResetLobbyKey(Scene scene, LoadSceneMode _)
+    {
+        if (MyceliumNetwork.IsHost && MyceliumNetwork.InLobby && scene.name == "MainMenu")
+        {
+            MyceliumNetwork.SetLobbyData("GameStarted", false);
+        }
     }
 
     void ResetMapLists()
     {
         mapsToDisable.Clear();
         customMapsInRotation.Clear();
+        MyceliumNetwork.SetLobbyData("GameStarted", false);
     }
 
     [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
@@ -52,7 +63,7 @@ class SyncMaps : MonoBehaviour
 
     static void DetermineMidMatchJoin()
     {
-        if (MyceliumNetwork.IsHost || MyceliumNetwork.GetLobbyData<bool>("InLobby"))
+        if (MyceliumNetwork.IsHost || !MyceliumNetwork.GetLobbyData<bool>("GameStarted"))
         {
             if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
             {
@@ -110,6 +121,7 @@ class SyncMaps : MonoBehaviour
             });
 
             MyceliumNetwork.SetLobbyData("MapsInRotation", string.Join(";", customMapsInRotation));
+            MyceliumNetwork.SetLobbyData("GameStarted", true);
             customMapsInRotation.Clear();
         }
     }
