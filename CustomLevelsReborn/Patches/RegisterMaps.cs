@@ -68,6 +68,8 @@ static class SetThumbnailAgain
             __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
             __instance.mapImg.texture = __instance.sprite;
             __instance.UpdateUI();
+
+            CLRPlugin.PlaylistItems.Add(__instance.sceneName, __instance.transform.GetChild(1).gameObject);
         }
     }
 }

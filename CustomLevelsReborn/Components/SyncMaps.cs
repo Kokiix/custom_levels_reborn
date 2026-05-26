@@ -7,6 +7,7 @@ using MyceliumNetworking;
 using Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 class SyncMaps : MonoBehaviour
 {
@@ -108,15 +109,31 @@ class SyncMaps : MonoBehaviour
         foreach (var map in nonShared)
         {
             if (!mapsToDisable.TryGetValue(map, out List<CSteamID> IDs))
-            {
                 mapsToDisable.Add(map, new List<CSteamID>());
-            }
-
             IDs.Add(sender.SenderSteamID);
+        }
+
+        foreach (var pair in CLRPlugin.PlaylistItems)
+        {
+            if (nonShared.Contains(pair.Key))
+            {
+                pair.Value.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
+            }
         }
 
         if (nonShared.Length > 0 && (SceneMotor.Instance.currentSceneName == null || SceneMotor.Instance.testMap))
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            foreach (var pair in CLRPlugin.PlaylistItems)
+            {
+                pair.Value.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
+            }
+        }
     }
 
     [CustomRPC]

@@ -19,8 +19,13 @@ public class CLRPlugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
     internal static List<string> MapVersions = [];
+
+    internal static Texture2D MapDisabledTexture;
+
+    // These could be unified but I'm lazy
     internal static Dictionary<string, string> SceneToBundleDir = [];
     internal static Dictionary<string, Texture2D> MapThumbnails = [];
+    internal static Dictionary<string, GameObject> PlaylistItems = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -35,7 +40,7 @@ public class CLRPlugin : BaseUnityPlugin
         PluginDir = Path.GetDirectoryName(Info.Location);
         if (PluginDir == null)
             PluginDir = Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn");
-        // LoadBundles();
+        LoadBundles();
 
         gameObject.AddComponent<SyncMaps>();
 
@@ -51,6 +56,7 @@ public class CLRPlugin : BaseUnityPlugin
     void LoadBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
+        MapDisabledTexture = shared.LoadAsset<Texture2D>("MapDisableOverlay");
         SwapShaders(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
