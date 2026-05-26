@@ -109,7 +109,10 @@ class SyncMaps : MonoBehaviour
         foreach (var map in nonShared)
         {
             if (!mapsToDisable.TryGetValue(map, out List<CSteamID> IDs))
-                mapsToDisable.Add(map, new List<CSteamID>());
+            {
+                IDs = new List<CSteamID>();
+                mapsToDisable.Add(map, IDs);
+            }
             IDs.Add(sender.SenderSteamID);
         }
 
