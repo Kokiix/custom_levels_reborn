@@ -93,7 +93,7 @@ class SyncMaps : MonoBehaviour
         var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
         if (nonShared.Length > 0)
         {
-            if (SceneMotor.Instance == null)
+            if (SceneMotor.Instance.currentSceneName == null)
                 PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
 
             var versionStrippedMaps = nonShared.Select(map => map.Substring(0, map.LastIndexOf("-")));
