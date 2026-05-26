@@ -91,7 +91,6 @@ class SyncMaps : MonoBehaviour
         }
         else
         {
-            CLRPlugin.MapVersions.Do(Debug.LogError);
             var currMaps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
             if (currMaps.Except(CLRPlugin.MapVersions).Any())
             {
@@ -136,7 +135,7 @@ class SyncMaps : MonoBehaviour
             }
         }
 
-        if (nonShared.Length > 0 && (SceneMotor.Instance.currentSceneName == null || !SceneMotor.Instance.testMap))
+        if (nonShared.Length > 0 && SceneMotor.Instance.currentSceneName == null && !SceneMotor.Instance.testMap)
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
     }
 
