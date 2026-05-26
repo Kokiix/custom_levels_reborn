@@ -89,9 +89,22 @@ class SyncMaps : MonoBehaviour
             var maps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
             if (maps.ToHashSet().SetEquals(CLRPlugin.MapVersions.ToHashSet()))
             {
-                PauseManager.Instance.WriteOfflineLog("You are missing maps currently being used in this lobby!");
-                SteamLobby.Instance.LeaveLobby();
+                if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
+                {
+                    SteamLobby.Instance.inSteamLobby = true;
+                    return;
+                }
+                else
+                {
+                    Debug.LogError("Failed to start FishySteamworks connection");
+                }
             }
+            else
+            {
+                PauseManager.Instance.WriteOfflineLog("You are missing maps currently being used in this lobby!");
+            }
+
+            SteamLobby.Instance.LeaveLobby();
         }
     }
 
@@ -153,7 +166,12 @@ class SyncMaps : MonoBehaviour
                 }
                 else if (CLRPlugin.SceneToBundleDir.Keys.Contains(map))
                 {
-                    customMapsInRotation.Add(map);
+                    // This is so inefficient
+                    foreach (var versionedMap in CLRPlugin.MapVersions)
+                    {
+                        if (versionedMap.StartsWith(map))
+                            customMapsInRotation.Add(versionedMap);
+                    }
                 }
 
                 return false;
