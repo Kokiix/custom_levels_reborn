@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using FishNet.Transporting;
 using HarmonyLib;
@@ -23,14 +24,14 @@ class SyncMaps : MonoBehaviour
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
         MyceliumNetwork.RegisterLobbyDataKey("GameStarted");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
-        MyceliumNetwork.LobbyLeft += OnLobbyLeave;
+        MyceliumNetwork.PlayerLeft += OnLobbyLeave;
         SceneManager.sceneLoaded += ResetLobbyKey;
     }
 
     internal void UnAwake()
     {
         MyceliumNetwork.LobbyCreated -= ResetMapLists;
-        MyceliumNetwork.LobbyLeft -= OnLobbyLeave;
+        MyceliumNetwork.PlayerLeft -= OnLobbyLeave;
         SceneManager.sceneLoaded -= ResetLobbyKey;
     }
 
@@ -139,27 +140,6 @@ class SyncMaps : MonoBehaviour
     //     }
     // }
 
-    [CustomRPC]
-    void EnableSharedMaps(string clientMapString, RPCInfo sender)
-    {
-        var enabledMaps = new List<string>();
-        foreach (var map in GetNonSharedMaps(clientMapString))
-        {
-            if (mapsToDisable.TryGetValue(map, out List<CSteamID> IDs))
-            {
-                IDs.Remove(sender.SenderSteamID);
-                if (IDs.Count == 0)
-                {
-                    mapsToDisable.Remove(map);
-                    enabledMaps.Add(map);
-                    CLRPlugin.MapDisabledSprites[map].SetActive(false);
-                }
-            }
-        }
-        if (enabledMaps.Count > 0 && SceneMotor.Instance.currentSceneName == null || !SceneMotor.Instance.testMap)
-            PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} has left, enabling {string.Join(", ", enabledMaps)}!");
-    }
-
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
     static class DisableMapsOnGameStart
     {
@@ -185,9 +165,28 @@ class SyncMaps : MonoBehaviour
         }
     }
 
-    void OnLobbyLeave()
+    void OnLobbyLeave(CSteamID id)
     {
-        TargetedRPC(MyceliumNetwork.LobbyHost, "EnableSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+        if (!MyceliumNetwork.IsHost || MyceliumNetwork.Players.Length == 0) return;
+
+        var enabledMaps = new List<string>();
+        foreach (var pair in mapsToDisable)
+        {
+            if (pair.Value.Contains(id))
+            {
+                pair.Value.Remove(id);
+                if (pair.Value.Count == 0)
+                {
+                    enabledMaps.Add(pair.Key);
+                    CLRPlugin.MapDisabledSprites[pair.Key].SetActive(false);
+                }
+            }
+        }
+
+        enabledMaps.Do(m => mapsToDisable.Remove(m));
+
+        if (enabledMaps.Count > 0 && (SceneMotor.Instance.currentSceneName == null || !SceneMotor.Instance.testMap))
+            PauseManager.Instance.WriteOfflineLog($"{string.Join(", ", enabledMaps)} have been re-enabled.");
     }
 
     static void TargetedRPC(CSteamID target, string methodname, object[] parameters)
