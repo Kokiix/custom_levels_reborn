@@ -121,7 +121,7 @@ class SyncMaps : MonoBehaviour
             }
         }
 
-        if (nonShared.Length > 0 && (SceneMotor.Instance.currentSceneName == null || SceneMotor.Instance.testMap))
+        if (nonShared.Length > 0 && (SceneMotor.Instance.currentSceneName == null || !SceneMotor.Instance.testMap))
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
     }
 
@@ -153,7 +153,7 @@ class SyncMaps : MonoBehaviour
                 }
             }
         }
-        if (enabledMaps.Count > 0 && SceneMotor.Instance.currentSceneName == null || SceneMotor.Instance.testMap)
+        if (enabledMaps.Count > 0 && SceneMotor.Instance.currentSceneName == null || !SceneMotor.Instance.testMap)
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} has left, enabling {string.Join(", ", enabledMaps)}!");
     }
 
