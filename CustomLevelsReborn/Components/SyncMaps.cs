@@ -12,7 +12,7 @@ class SyncMaps : MonoBehaviour
 {
     static readonly uint ID = 568324179;
 
-    static List<string> mapsToDisable = [];
+    static Dictionary<string, List<CSteamID>> mapsToDisable = [];
     static List<string> customMapsInRotation = [];
 
     internal void Awake()
@@ -22,7 +22,7 @@ class SyncMaps : MonoBehaviour
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
         MyceliumNetwork.RegisterLobbyDataKey("GameStarted");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
-        // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
+        MyceliumNetwork.LobbyLeft += OnLobbyLeave;
 
         SceneManager.sceneLoaded += ResetLobbyKey;
     }
@@ -87,18 +87,50 @@ class SyncMaps : MonoBehaviour
         }
     }
 
+    string[] GetNonSharedMaps(string input)
+    {
+        return CLRPlugin.MapVersions
+        .Except(input.Split(";;"))
+        .Select(map => map.Substring(0, map.LastIndexOf("-")))
+        .ToArray();
+    }
+
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
     {
-        var nonShared = CLRPlugin.MapVersions.Except(clientMapString.Split(";;")).ToArray();
-        if (nonShared.Length > 0)
+        var nonShared = GetNonSharedMaps(clientMapString);
+        foreach (var map in nonShared)
         {
-            if (SceneMotor.Instance.currentSceneName == null)
-                PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
+            if (!mapsToDisable.TryGetValue(map, out List<CSteamID> IDs))
+            {
+                mapsToDisable.Add(map, new List<CSteamID>());
+            }
 
-            var versionStrippedMaps = nonShared.Select(map => map.Substring(0, map.LastIndexOf("-")));
-            mapsToDisable.AddRange(versionStrippedMaps);
+            IDs.Add(sender.SenderSteamID);
         }
+
+        if (nonShared.Length > 0 && (SceneMotor.Instance.currentSceneName == null || SceneMotor.Instance.testMap))
+            PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
+    }
+
+    [CustomRPC]
+    void EnableSharedMaps(string clientMapString, RPCInfo sender)
+    {
+        var enabledMaps = new List<string>();
+        foreach (var map in GetNonSharedMaps(clientMapString))
+        {
+            if (mapsToDisable.TryGetValue(map, out List<CSteamID> IDs))
+            {
+                IDs.Remove(sender.SenderSteamID);
+                if (IDs.Count == 0)
+                {
+                    mapsToDisable.Remove(map);
+                    enabledMaps.Add(map);
+                }
+            }
+        }
+        if (enabledMaps.Count > 0 && SceneMotor.Instance.currentSceneName == null || SceneMotor.Instance.testMap)
+            PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} has left, enabling {string.Join(", ", enabledMaps)}!");
     }
 
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
@@ -108,7 +140,7 @@ class SyncMaps : MonoBehaviour
         {
             __instance.PlayListMaps.RemoveAll(map =>
             {
-                if (mapsToDisable.Contains(map))
+                if (mapsToDisable.Keys.Contains(map))
                 {
                     return true;
                 }
@@ -126,11 +158,10 @@ class SyncMaps : MonoBehaviour
         }
     }
 
-    // RE-enabling maps would require keeping track of what players are blocking what maps
-    // void OnLobbyLeave()
-    // {
-
-    // }
+    void OnLobbyLeave()
+    {
+        TargetedRPC(MyceliumNetwork.LobbyHost, "EnableSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+    }
 
     static void TargetedRPC(CSteamID target, string methodname, object[] parameters)
     {

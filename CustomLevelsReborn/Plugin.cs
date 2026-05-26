@@ -24,12 +24,16 @@ public class CLRPlugin : BaseUnityPlugin
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
+    static string PluginDir;
+
     void Awake()
     {
         Log = Logger;
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
 
+        var isKokiPC = Path.GetDirectoryName(Info.Location).StartsWith(@"C:\Users\koki\AppData\Roaming");
+        PluginDir = isKokiPC ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
         LoadBundles();
 
         gameObject.AddComponent<SyncMaps>();
@@ -44,17 +48,16 @@ public class CLRPlugin : BaseUnityPlugin
 
     void LoadBundles()
     {
-        string myPluginDir = Path.GetDirectoryName(Info.Location);
-        var shared = AssetBundle.LoadFromFile(Path.Combine(myPluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
+        var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
         SwapShaders(shared);
 
-        foreach (var pluginDir in Directory.EnumerateDirectories(Paths.PluginPath))
+        foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
-            foreach (var folder in Directory.EnumerateDirectories(pluginDir))
+            foreach (var folder in Directory.EnumerateDirectories(modDir))
             {
                 if (folder.EndsWith("CustomMaps"))
                 {
-                    var pluginVersion = GetPluginVersion(pluginDir);
+                    var pluginVersion = GetPluginVersion(modDir);
 
                     foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
                     {
