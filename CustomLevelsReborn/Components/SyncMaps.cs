@@ -165,6 +165,33 @@ class SyncMaps : MonoBehaviour
         }
     }
 
+    [HarmonyPatch(typeof(SteamLobby), "EnterExplorationMap")]
+    static class BlockExploringDisabledMap
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            var isMapDisabled = AccessTools.Method(typeof(SyncMaps), "IsMapDisabled");
+
+            return new CodeMatcher(instructions, generator)
+            .End().CreateLabel(out Label ret)
+            .Start().Insert(
+                new CodeInstruction(OpCodes.Ldarg_1),
+                new CodeInstruction(OpCodes.Call, isMapDisabled),
+                new CodeInstruction(OpCodes.Brtrue, ret))
+            .InstructionEnumeration();
+        }
+    }
+
+    bool IsMapDisabled(string mapname)
+    {
+        var disabled = mapsToDisable.Keys.Contains(mapname);
+        if (disabled)
+        {
+            PauseManager.Instance.WriteOfflineLog("Someone in the lobby doesn't have this map");
+        }
+        return disabled;
+    }
+
     void OnLobbyLeave(CSteamID id)
     {
         if (!MyceliumNetwork.IsHost || MyceliumNetwork.Players.Length == 0) return;
