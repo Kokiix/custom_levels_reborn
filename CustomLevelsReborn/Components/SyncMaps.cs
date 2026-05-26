@@ -50,7 +50,7 @@ class SyncMaps : MonoBehaviour
             var maps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
             if (maps.ToHashSet().SetEquals(CLRPlugin.MapVersions.ToHashSet()))
             {
-                PauseManager.Instance.ShowInfoPopup("You are missing maps currently being used in this lobby!");
+                PauseManager.Instance.WriteOfflineLog("You are missing maps currently being used in this lobby!");
                 SteamLobby.Instance.LeaveLobby();
             }
         }
