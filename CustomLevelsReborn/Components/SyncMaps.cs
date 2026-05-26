@@ -117,7 +117,7 @@ class SyncMaps : MonoBehaviour
         {
             if (nonShared.Contains(pair.Key))
             {
-                pair.Value.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
+                // pair.Value.transform.GetChild(1).gameObject.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
             }
         }
 
@@ -131,7 +131,7 @@ class SyncMaps : MonoBehaviour
         {
             foreach (var pair in CLRPlugin.PlaylistItems)
             {
-                pair.Value.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
+                Object.Instantiate(CLRPlugin.MapDisabledObj).transform.SetParent(pair.Value.transform);
             }
         }
     }

@@ -10,6 +10,7 @@ using HarmonyLib;
 using HarmonyLib.Tools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 [assembly: StraftatMod(isVanillaCompatible: false)]
 
@@ -20,7 +21,7 @@ public class CLRPlugin : BaseUnityPlugin
     internal static ManualLogSource Log;
     internal static List<string> MapVersions = [];
 
-    internal static Texture2D MapDisabledTexture;
+    internal static GameObject MapDisabledObj;
 
     // These could be unified but I'm lazy
     internal static Dictionary<string, string> SceneToBundleDir = [];
@@ -56,7 +57,11 @@ public class CLRPlugin : BaseUnityPlugin
     void LoadBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
-        MapDisabledTexture = shared.LoadAsset<Texture2D>("MapDisableOverlay");
+        MapDisabledObj = new GameObject();
+        var test = shared.LoadAsset<Sprite>("MapDisableOverlay");
+        Debug.LogError(test);
+        MapDisabledObj.AddComponent<Image>().sprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
+        DontDestroyOnLoad(MapDisabledObj);
         SwapShaders(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))

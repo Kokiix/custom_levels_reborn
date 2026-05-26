@@ -63,13 +63,16 @@ static class SetThumbnailAgain
 {
     public static void Postfix(SelectSceneInstance __instance)
     {
-        if (!__instance.sprite && CLRPlugin.MapThumbnails.ContainsKey(__instance.sceneName))
+        if (!__instance.sprite)
         {
-            __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
-            __instance.mapImg.texture = __instance.sprite;
-            __instance.UpdateUI();
+            if (CLRPlugin.MapThumbnails.ContainsKey(__instance.sceneName))
+            {
+                __instance.sprite = CLRPlugin.MapThumbnails[__instance.sceneName];
+                __instance.mapImg.texture = __instance.sprite;
+                __instance.UpdateUI();
+            }
 
-            CLRPlugin.PlaylistItems.Add(__instance.sceneName, __instance.transform.GetChild(1).gameObject);
+            CLRPlugin.PlaylistItems.TryAdd(__instance.sceneName, __instance.gameObject);
         }
     }
 }
