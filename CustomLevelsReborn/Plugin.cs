@@ -21,12 +21,12 @@ public class CLRPlugin : BaseUnityPlugin
     internal static ManualLogSource Log;
     internal static List<string> MapVersions = [];
 
-    internal static GameObject MapDisabledObj;
+    internal static Sprite MapDisabledSprite;
 
     // These could be unified but I'm lazy
     internal static Dictionary<string, string> SceneToBundleDir = [];
     internal static Dictionary<string, Texture2D> MapThumbnails = [];
-    internal static Dictionary<string, GameObject> PlaylistItems = [];
+    internal static Dictionary<string, GameObject> MapDisabledSprites = [];
 
     Harmony _harmony = new(MyPluginInfo.PLUGIN_GUID);
 
@@ -57,11 +57,7 @@ public class CLRPlugin : BaseUnityPlugin
     void LoadBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
-        MapDisabledObj = new GameObject();
-        var test = shared.LoadAsset<Sprite>("MapDisableOverlay");
-        Debug.LogError(test);
-        MapDisabledObj.AddComponent<Image>().sprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
-        DontDestroyOnLoad(MapDisabledObj);
+        MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
         SwapShaders(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))

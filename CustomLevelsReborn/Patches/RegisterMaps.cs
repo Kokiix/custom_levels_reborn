@@ -7,6 +7,7 @@ using ComputerysModdingUtilities;
 using CustomLevelsReborn;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 
 [HarmonyPatch(typeof(MapsManager), "InitMaps")]
 static class RegisterScenes
@@ -72,7 +73,18 @@ static class SetThumbnailAgain
                 __instance.UpdateUI();
             }
 
-            CLRPlugin.PlaylistItems.TryAdd(__instance.sceneName, __instance.gameObject);
+            if (CLRPlugin.MapDisabledSprites.ContainsKey(__instance.sceneName)) return;
+
+            // Technically not very efficient to be setting all this for every single one but oh well
+            var go = new GameObject();
+            go.AddComponent<Image>().sprite = CLRPlugin.MapDisabledSprite;
+            go.name = "MapDisabled";
+            go.SetActive(false);
+            go.transform.SetParent(__instance.gameObject.transform);
+            go.transform.localPosition = new Vector3(-77.4f, 0, 0);
+            go.transform.localScale = new Vector3(1.1f, 0.6f, 0);
+
+            CLRPlugin.MapDisabledSprites.TryAdd(__instance.sceneName, go);
         }
     }
 }

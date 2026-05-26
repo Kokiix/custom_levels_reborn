@@ -113,11 +113,11 @@ class SyncMaps : MonoBehaviour
             IDs.Add(sender.SenderSteamID);
         }
 
-        foreach (var pair in CLRPlugin.PlaylistItems)
+        foreach (var pair in CLRPlugin.MapDisabledSprites)
         {
             if (nonShared.Contains(pair.Key))
             {
-                // pair.Value.transform.GetChild(1).gameObject.AddComponent<RawImage>().texture = CLRPlugin.MapDisabledTexture;
+                pair.Value.SetActive(true);
             }
         }
 
@@ -125,16 +125,16 @@ class SyncMaps : MonoBehaviour
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
     }
 
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-            foreach (var pair in CLRPlugin.PlaylistItems)
-            {
-                Object.Instantiate(CLRPlugin.MapDisabledObj).transform.SetParent(pair.Value.transform);
-            }
-        }
-    }
+    // void Update()
+    // {
+    //     if (Input.GetKeyDown(KeyCode.G))
+    //     {
+    //         foreach (var pair in CLRPlugin.PlaylistItems)
+    //         {
+
+    //         }
+    //     }
+    // }
 
     [CustomRPC]
     void EnableSharedMaps(string clientMapString, RPCInfo sender)
@@ -149,6 +149,7 @@ class SyncMaps : MonoBehaviour
                 {
                     mapsToDisable.Remove(map);
                     enabledMaps.Add(map);
+                    CLRPlugin.MapDisabledSprites[map].SetActive(false);
                 }
             }
         }
