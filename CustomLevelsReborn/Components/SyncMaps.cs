@@ -182,7 +182,7 @@ class SyncMaps : MonoBehaviour
         }
     }
 
-    bool IsMapDisabled(string mapname)
+    static bool IsMapDisabled(string mapname)
     {
         var disabled = mapsToDisable.Keys.Contains(mapname);
         if (disabled)
