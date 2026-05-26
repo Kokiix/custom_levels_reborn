@@ -17,9 +17,6 @@ static class BundleLoad
 
     internal static void Start(string sceneName)
     {
-        Debug.LogError("loding!");
-        Debug.LogError(lastScene);
-        Debug.LogError(sceneName);
         if (lastScene == sceneName) return;
         lastScene = sceneName;
 
@@ -43,7 +40,6 @@ static class MultiplayerBundleLoad
     {
         static void Postfix(string __result)
         {
-            Debug.LogError("loading from scenemotor");
             BundleLoad.Start(__result);
         }
     }
@@ -53,7 +49,6 @@ static class MultiplayerBundleLoad
     {
         static void Prefix(string sceneName)
         {
-            Debug.LogError("loading from fishnet");
             BundleLoad.Start(sceneName);
         }
     }
@@ -64,7 +59,6 @@ static class SingleplayerBundleLoad
 {
     static void Prefix(string sceneName)
     {
-        Debug.LogError("loading from recon");
         BundleLoad.Start(sceneName);
     }
 }
