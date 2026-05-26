@@ -69,41 +69,39 @@ class SyncMaps : MonoBehaviour
         }
     }
 
+    static void Connect()
+    {
+        if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
+        {
+            SteamLobby.Instance.inSteamLobby = true;
+            TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
+        }
+        else
+        {
+            Debug.LogError("Failed to start FishySteamworks connection");
+            SteamLobby.Instance.LeaveLobby();
+        }
+    }
+
     static void DetermineMidMatchJoin()
     {
         if (MyceliumNetwork.IsHost || !MyceliumNetwork.GetLobbyData<bool>("GameStarted"))
         {
-            if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
-            {
-                SteamLobby.Instance.inSteamLobby = true;
-                TargetedRPC(MyceliumNetwork.LobbyHost, "DisableNonSharedMaps", [string.Join(";;", CLRPlugin.MapVersions)]);
-            }
-            else
-            {
-                Debug.LogError("Failed to start FishySteamworks connection");
-                SteamLobby.Instance.LeaveLobby();
-            }
+            Connect();
         }
         else
         {
-            var maps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
-            if (maps.ToHashSet().SetEquals(CLRPlugin.MapVersions.ToHashSet()))
-            {
-                if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
-                {
-                    SteamLobby.Instance.inSteamLobby = true;
-                    return;
-                }
-                else
-                {
-                    Debug.LogError("Failed to start FishySteamworks connection");
-                }
-            }
-            else
+            CLRPlugin.MapVersions.Do(Debug.LogError);
+            var currMaps = MyceliumNetwork.GetLobbyData<string>("MapsInRotation").Split(";");
+            if (currMaps.Except(CLRPlugin.MapVersions).Any())
             {
                 PauseManager.Instance.WriteOfflineLog("You are missing maps currently being used in this lobby!");
             }
-
+            else
+            {
+                Connect();
+                return;
+            }
             SteamLobby.Instance.LeaveLobby();
         }
     }
@@ -142,39 +140,35 @@ class SyncMaps : MonoBehaviour
             PauseManager.Instance.ShowInfoPopup($"{SteamFriends.GetFriendPersonaName(sender.SenderSteamID)} is missing {string.Join(", ", nonShared)}!");
     }
 
-    // void Update()
-    // {
-    //     if (Input.GetKeyDown(KeyCode.G))
-    //     {
-    //         foreach (var pair in CLRPlugin.PlaylistItems)
-    //         {
-
-    //         }
-    //     }
-    // }
+    [HarmonyPatch(typeof(MapSelection), "UpdateScenes")]
+    static class BlockDisabledMapsFromQueue
+    {
+        static void Prefix(MapSelection __instance)
+        {
+            foreach (var scene in __instance.sceneInstances)
+            {
+                if (mapsToDisable.Keys.Contains(scene.sceneName))
+                {
+                    scene.selected = false;
+                }
+            }
+        }
+    }
 
     [HarmonyPatch(typeof(SceneMotor), "ServerStartGameScene")]
-    static class DisableMapsOnGameStart
+    static class SetMapsInRotation
     {
-        static void Prefix(SceneMotor __instance)
+        static void Postfix(SceneMotor __instance)
         {
-            __instance.PlayListMaps.RemoveAll(map =>
+            __instance.PlayListMapsQueue
+            .Where(CLRPlugin.SceneToBundleDir.Keys.Contains)
+            .Do(map =>
             {
-                if (mapsToDisable.Keys.Contains(map))
+                foreach (var versionedMap in CLRPlugin.MapVersions)
                 {
-                    return true;
+                    if (versionedMap.Substring(0, versionedMap.LastIndexOf("-")) == map)
+                        customMapsInRotation.Add(versionedMap);
                 }
-                else if (CLRPlugin.SceneToBundleDir.Keys.Contains(map))
-                {
-                    // This is so inefficient
-                    foreach (var versionedMap in CLRPlugin.MapVersions)
-                    {
-                        if (versionedMap.StartsWith(map))
-                            customMapsInRotation.Add(versionedMap);
-                    }
-                }
-
-                return false;
             });
 
             MyceliumNetwork.SetLobbyData("MapsInRotation", string.Join(";", customMapsInRotation));
