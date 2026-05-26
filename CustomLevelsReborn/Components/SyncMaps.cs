@@ -15,16 +15,22 @@ class SyncMaps : MonoBehaviour
     static Dictionary<string, List<CSteamID>> mapsToDisable = [];
     static List<string> customMapsInRotation = [];
 
-    internal void Awake()
+    void Awake()
     {
+        MyceliumNetwork.DeregisterNetworkObject(this, ID);
         MyceliumNetwork.RegisterNetworkObject(this, ID);
-
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
         MyceliumNetwork.RegisterLobbyDataKey("GameStarted");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
         MyceliumNetwork.LobbyLeft += OnLobbyLeave;
-
         SceneManager.sceneLoaded += ResetLobbyKey;
+    }
+
+    internal void UnAwake()
+    {
+        MyceliumNetwork.LobbyCreated -= ResetMapLists;
+        MyceliumNetwork.LobbyLeft -= OnLobbyLeave;
+        SceneManager.sceneLoaded -= ResetLobbyKey;
     }
 
     void ResetLobbyKey(Scene scene, LoadSceneMode _)

@@ -32,9 +32,10 @@ public class CLRPlugin : BaseUnityPlugin
         this.gameObject.hideFlags = HideFlags.HideAndDontSave;
         _harmony.PatchAll();
 
-        var isKokiPC = Path.GetDirectoryName(Info.Location).StartsWith(@"C:\Users\koki\AppData\Roaming");
-        PluginDir = isKokiPC ? Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn") : Path.GetDirectoryName(Info.Location);
-        LoadBundles();
+        PluginDir = Path.GetDirectoryName(Info.Location);
+        if (PluginDir == null)
+            PluginDir = Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn");
+        // LoadBundles();
 
         gameObject.AddComponent<SyncMaps>();
 
@@ -44,6 +45,7 @@ public class CLRPlugin : BaseUnityPlugin
     void OnDestroy()
     {
         _harmony.UnpatchSelf();
+        gameObject.GetComponent<SyncMaps>().UnAwake();
     }
 
     void LoadBundles()
