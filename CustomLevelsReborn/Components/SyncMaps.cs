@@ -20,6 +20,7 @@ class SyncMaps : MonoBehaviour
         MyceliumNetwork.RegisterNetworkObject(this, ID);
 
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
+        MyceliumNetwork.RegisterLobbyDataKey("InLobby");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
         // MyceliumNetwork.LobbyLeft += OnLobbyLeave;
     }
@@ -30,9 +31,28 @@ class SyncMaps : MonoBehaviour
         customMapsInRotation.Clear();
     }
 
+    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
+    static class HandleLobbyEnter
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var setClientAddress = AccessTools.Method(typeof(Transport), "SetClientAddress");
+            var determineMidMatchJoin = AccessTools.Method(typeof(SyncMaps), "DetermineMidMatchJoin");
+
+            return new CodeMatcher(instructions)
+            .MatchForward(useEnd: true,
+            new CodeMatch(OpCodes.Callvirt, setClientAddress),
+            new CodeMatch(OpCodes.Ldarg_0))
+            .Insert(
+                new CodeInstruction(OpCodes.Call, determineMidMatchJoin),
+                new CodeInstruction(OpCodes.Ret))
+            .InstructionEnumeration();
+        }
+    }
+
     static void DetermineMidMatchJoin()
     {
-        if (MyceliumNetwork.IsHost || SceneMotor.Instance == null)
+        if (MyceliumNetwork.IsHost || MyceliumNetwork.GetLobbyData<bool>("InLobby"))
         {
             if (SteamLobby.Instance._fishySteamworks.StartConnection(server: false))
             {
@@ -55,31 +75,6 @@ class SyncMaps : MonoBehaviour
             }
         }
     }
-
-    [HarmonyPatch(typeof(SteamLobby), "OnLobbyEntered")]
-    static class HandleLobbyEnter
-    {
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var setClientAddress = AccessTools.Method(typeof(Transport), "SetClientAddress");
-            var determineMidMatchJoin = AccessTools.Method(typeof(SyncMaps), "DetermineMidMatchJoin");
-
-            return new CodeMatcher(instructions)
-            .MatchForward(useEnd: true,
-            new CodeMatch(OpCodes.Callvirt, setClientAddress),
-            new CodeMatch(OpCodes.Ldarg_0))
-            .Insert(
-                new CodeInstruction(OpCodes.Call, determineMidMatchJoin),
-                new CodeInstruction(OpCodes.Ret))
-            .InstructionEnumeration();
-        }
-    }
-
-    // RE-enabling maps would require keeping track of what players are blocking what maps
-    // void OnLobbyLeave()
-    // {
-
-    // }
 
     [CustomRPC]
     void DisableNonSharedMaps(string clientMapString, RPCInfo sender)
@@ -115,8 +110,15 @@ class SyncMaps : MonoBehaviour
             });
 
             MyceliumNetwork.SetLobbyData("MapsInRotation", string.Join(";", customMapsInRotation));
+            customMapsInRotation.Clear();
         }
     }
+
+    // RE-enabling maps would require keeping track of what players are blocking what maps
+    // void OnLobbyLeave()
+    // {
+
+    // }
 
     static void TargetedRPC(CSteamID target, string methodname, object[] parameters)
     {
