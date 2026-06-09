@@ -56,7 +56,7 @@ public class CLRPlugin : BaseUnityPlugin
 
     void LoadBundles()
     {
-        var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared")); // Potentially move to dynBundleLoad to avoid keeping in memory, tho the file is current of an inconsequential size
+        var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared"));
         MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
         SwapShadersAndTextures(shared);
 
@@ -136,41 +136,14 @@ public class CLRPlugin : BaseUnityPlugin
     /// <param name="bundle"></param>
     void SwapShadersAndTextures(AssetBundle bundle)
     {
-        HashSet<string> texturesToReplace = [];
-        Dictionary<string, List<Material>> texturesToReplaceMap = [];
-
         foreach (var mat in bundle.LoadAllAssets<Material>())
         {
-            foreach (var propertyName in mat.GetTexturePropertyNames())
-            {
-                var tex = mat.GetTexture(propertyName);
-                if (tex && tex.name.EndsWith("_placeholder"))
-                {
-                    var nonPlaceholderName = tex.name[..^12];
-                    texturesToReplace.Add(nonPlaceholderName);
-                    if (!texturesToReplaceMap.ContainsKey(nonPlaceholderName))
-                        texturesToReplaceMap.Add(nonPlaceholderName, []);
-                    texturesToReplaceMap[nonPlaceholderName].Add(mat);
-                }
-            }
-
             var existingShader = mat.shader;
 
             var inGameShader = Shader.Find(existingShader.name);
             if (inGameShader)
             {
                 mat.shader = inGameShader;
-                Debug.LogError("replacing " + existingShader.name + " shader");
-            }
-        }
-
-        foreach (var tex in Resources.FindObjectsOfTypeAll<Texture>())
-        {
-            Debug.LogError(tex.name);
-            if (texturesToReplace.Contains(tex.name))
-            {
-                texturesToReplaceMap[tex.name].Do(mat => mat.SetTexture(tex.name, tex));
-                Debug.LogError("replacing " + tex.name);
             }
         }
     }
