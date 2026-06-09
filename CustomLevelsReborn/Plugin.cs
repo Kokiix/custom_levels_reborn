@@ -137,35 +137,39 @@ public class CLRPlugin : BaseUnityPlugin
     void SwapShadersAndTextures(AssetBundle bundle)
     {
         HashSet<string> texturesToReplace = [];
-        Dictionary<string, Material> texturesToReplaceMap = [];
+        Dictionary<string, List<Material>> texturesToReplaceMap = [];
 
         foreach (var mat in bundle.LoadAllAssets<Material>())
         {
-            foreach (var textureName in mat.GetTexturePropertyNames())
+            foreach (var propertyName in mat.GetTexturePropertyNames())
             {
-                if (textureName.EndsWith("_placeholder"))
+                var tex = mat.GetTexture(propertyName);
+                if (tex && tex.name.EndsWith("_placeholder"))
                 {
-                    texturesToReplace.Add(textureName[..^12]);
-                    texturesToReplaceMap[textureName[..^12]] = mat;
+                    var nonPlaceholderName = tex.name[..^12];
+                    texturesToReplace.Add(nonPlaceholderName);
+                    if (!texturesToReplaceMap.ContainsKey(nonPlaceholderName))
+                        texturesToReplaceMap.Add(nonPlaceholderName, []);
+                    texturesToReplaceMap[nonPlaceholderName].Add(mat);
                 }
             }
 
             var existingShader = mat.shader;
-            if (!existingShader.name.EndsWith("_placeholder")) return;
 
-            var inGameShader = Shader.Find(existingShader.name[..^12]);
+            var inGameShader = Shader.Find(existingShader.name);
             if (inGameShader)
             {
                 mat.shader = inGameShader;
-                Debug.LogError("replacing " + existingShader.name);
+                Debug.LogError("replacing " + existingShader.name + " shader");
             }
         }
 
         foreach (var tex in Resources.FindObjectsOfTypeAll<Texture>())
         {
+            Debug.LogError(tex.name);
             if (texturesToReplace.Contains(tex.name))
             {
-                texturesToReplaceMap[tex.name].SetTexture(tex.name, tex);
+                texturesToReplaceMap[tex.name].Do(mat => mat.SetTexture(tex.name, tex));
                 Debug.LogError("replacing " + tex.name);
             }
         }
