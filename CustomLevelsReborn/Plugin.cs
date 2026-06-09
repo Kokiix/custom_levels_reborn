@@ -56,9 +56,9 @@ public class CLRPlugin : BaseUnityPlugin
 
     void LoadBundles()
     {
-        var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "shared")); // Potentially move to dynBundleLoad, tho the file is currently microscopic in size
+        var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared")); // Potentially move to dynBundleLoad to avoid keeping in memory, tho the file is current of an inconsequential size
         MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
-        SwapShaders(shared);
+        SwapShadersAndTextures(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
@@ -87,7 +87,7 @@ public class CLRPlugin : BaseUnityPlugin
                         }
                         else if (filePath.EndsWith("_resources"))
                         {
-                            SwapShaders(bundle);
+                            SwapShadersAndTextures(bundle);
                             foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
                             {
                                 MapThumbnails.Add(tnail.name, tnail);
@@ -130,19 +130,43 @@ public class CLRPlugin : BaseUnityPlugin
     }
 
     /// <summary>
-    /// Shaders compile differently depending on if the bundle target is set to Windows or Linux, because of Vulkan vs OpenGL. 
-    /// Swapping shaders at runtime is an lazy way to fix it :p
+    /// Shaders compile differently depending on if the bundle target is set to Windows or Linux, because of Vulkan vs OpenGL.
+    /// Textures are swapped to save on file size for both the map kit and bundled maps.
     /// </summary>
     /// <param name="bundle"></param>
-    void SwapShaders(AssetBundle bundle)
+    void SwapShadersAndTextures(AssetBundle bundle)
     {
+        HashSet<string> texturesToReplace = [];
+        Dictionary<string, Material> texturesToReplaceMap = [];
+
         foreach (var mat in bundle.LoadAllAssets<Material>())
         {
+            foreach (var textureName in mat.GetTexturePropertyNames())
+            {
+                if (textureName.EndsWith("_placeholder"))
+                {
+                    texturesToReplace.Add(textureName[..^12]);
+                    texturesToReplaceMap[textureName[..^12]] = mat;
+                }
+            }
+
             var existingShader = mat.shader;
-            var inGameShader = Shader.Find(existingShader.name);
+            if (!existingShader.name.EndsWith("_placeholder")) return;
+
+            var inGameShader = Shader.Find(existingShader.name[..^12]);
             if (inGameShader)
             {
                 mat.shader = inGameShader;
+                Debug.LogError("replacing " + existingShader.name);
+            }
+        }
+
+        foreach (var tex in Resources.FindObjectsOfTypeAll<Texture>())
+        {
+            if (texturesToReplace.Contains(tex.name))
+            {
+                texturesToReplaceMap[tex.name].SetTexture(tex.name, tex);
+                Debug.LogError("replacing " + tex.name);
             }
         }
     }
