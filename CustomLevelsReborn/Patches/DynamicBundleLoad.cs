@@ -17,12 +17,9 @@ static class BundleLoad
 
     internal static void Start(string sceneName)
     {
-        if (lastScene == sceneName) return;
-        lastScene = sceneName;
-
         if (bundleRef)
         {
-            bundleRef.UnloadAsync(false);
+            bundleRef.Unload(false);
             bundleRef = null;
         }
 

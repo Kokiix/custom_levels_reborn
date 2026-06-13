@@ -51,6 +51,7 @@ public class CLRPlugin : BaseUnityPlugin
     void OnDestroy()
     {
         _harmony.UnpatchSelf();
+        AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared")).Unload(true);
         gameObject.GetComponent<SyncMaps>().UnAwake();
     }
 
