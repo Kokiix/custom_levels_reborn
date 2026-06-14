@@ -55,6 +55,7 @@ public class CLRPlugin : BaseUnityPlugin
         gameObject.GetComponent<SyncMaps>().UnAwake();
     }
 
+    // _resources bundles and clr_shared bundle are currently always loaded.
     void LoadBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared"));
