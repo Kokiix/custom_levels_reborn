@@ -1,29 +1,26 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection.Emit;
-using BepInEx;
-using ComputerysModdingUtilities;
-using CustomLevelsReborn;
 using FishNet.Managing.Scened;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 static class BundleLoad
 {
     static AssetBundle bundleRef;
-    static string lastScene;
 
-
-    internal static void Start(string sceneName)
+    internal static void UnloadBundle(Scene scene)
     {
-        if (bundleRef)
+        if (bundleRef && CLRPlugin.SceneToBundleDir.ContainsKey(scene.name))
         {
-            bundleRef.Unload(false);
+            LightmapSettings.lightmaps = new LightmapData[0];
+            bundleRef.Unload(true);
             bundleRef = null;
         }
+    }
 
-        if (CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
+    // Gets triggered multiple times on sceneload i think..
+    internal static void Start(string sceneName)
+    {
+        if (!bundleRef && CLRPlugin.SceneToBundleDir.ContainsKey(sceneName))
         {
             bundleRef = AssetBundle.LoadFromFile(CLRPlugin.SceneToBundleDir[sceneName]);
         }
@@ -35,6 +32,11 @@ static class MultiplayerBundleLoad
     [HarmonyPatch(typeof(SceneMotor), "GetNextMap")]
     static class LoadHost
     {
+        static void Prepare()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += BundleLoad.UnloadBundle;
+        }
+
         static void Postfix(string __result)
         {
             BundleLoad.Start(__result);
