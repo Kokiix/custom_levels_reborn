@@ -41,7 +41,7 @@ public class CLRPlugin : BaseUnityPlugin
         PluginDir = Path.GetDirectoryName(Info.Location);
         if (PluginDir == null)
             PluginDir = Path.Combine(Paths.PluginPath, "DEVELOPMENT-BUILD-Custom Levels Reborn");
-        LoadBundles();
+        FindBundles();
 
         gameObject.AddComponent<SyncMaps>();
 
@@ -56,7 +56,7 @@ public class CLRPlugin : BaseUnityPlugin
     }
 
     // _resources bundles and clr_shared bundle are currently always loaded.
-    void LoadBundles()
+    void FindBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared"));
         MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
@@ -64,46 +64,45 @@ public class CLRPlugin : BaseUnityPlugin
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
-            foreach (var folder in Directory.EnumerateDirectories(modDir))
-            {
-                if (folder.EndsWith("CustomMaps"))
-                {
-                    var pluginVersion = GetPluginVersion(modDir);
-
-                    foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
-                    {
-                        var bundle = AssetBundle.LoadFromFile(filePath);
-                        if (bundle.isStreamedSceneAssetBundle)
-                        {
-                            // Technically, I could get the scene data from some metadata file to avoid this load and unload,
-                            // but that would require some more work by the user, then reconciling things if that doesn't 
-                            // match any actual scene path... At least this loads them one at a time?
-                            foreach (var scene in bundle.GetAllScenePaths()
-                            .Select(Path.GetFileNameWithoutExtension))
-                            {
-                                SceneToBundleDir.Add(scene, filePath);
-                                MapVersions.Add(scene + "-v" + pluginVersion);
-                            }
-
-                            bundle.Unload(true);
-                        }
-                        else if (filePath.EndsWith("_resources"))
-                        {
-                            SwapShadersAndTextures(bundle);
-                            foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
-                            {
-                                MapThumbnails.Add(tnail.name, tnail);
-                            }
-                        }
-                    }
-
-                    break;
-                }
-            }
+            var packageVer = GetPackageVersion(modDir);
+            var customMapsDir = Directory.GetDirectories(modDir, "CustomMaps", SearchOption.AllDirectories).FirstOrDefault();
+            if (!customMapsDir.IsNullOrWhiteSpace())
+                LoadBundles(customMapsDir, packageVer);
         }
 
         Logger.LogInfo("Loaded maps: " + string.Join(", ", MapVersions));
     }
+
+    void LoadBundles(string dir, string packageVer)
+    {
+        foreach (var filePath in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+        {
+            var bundle = AssetBundle.LoadFromFile(filePath);
+            if (bundle.isStreamedSceneAssetBundle)
+            {
+                // Technically, I could get the scene data from some metadata file to avoid this load and unload,
+                // but that would require some more work by the user, then reconciling things if that doesn't 
+                // match any actual scene path... At least this loads them one at a time?
+                foreach (var scene in bundle.GetAllScenePaths()
+                .Select(Path.GetFileNameWithoutExtension))
+                {
+                    SceneToBundleDir.Add(scene, filePath);
+                    MapVersions.Add(scene + "-v" + packageVer);
+                }
+
+                bundle.Unload(true);
+            }
+            else if (filePath.EndsWith("_resources"))
+            {
+                SwapShadersAndTextures(bundle);
+                foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
+                {
+                    MapThumbnails.Add(tnail.name, tnail);
+                }
+            }
+        }
+    }
+
 
     [Serializable]
     public class ThunderstoreManifest
@@ -114,7 +113,7 @@ public class CLRPlugin : BaseUnityPlugin
         public string description;
     }
 
-    string GetPluginVersion(string folder)
+    string GetPackageVersion(string folder)
     {
         string manifestPath = Path.Combine(folder, "manifest.json");
         try

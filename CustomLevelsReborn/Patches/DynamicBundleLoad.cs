@@ -17,6 +17,7 @@ static class BundleLoad
     }
 
     // Workaround to prevent having to store / reload the _resources bundle
+    // *won't work for custom shaders tho...
     internal static void ReloadShaders(Scene scene, LoadSceneMode mode)
     {
         if (!CLRPlugin.SceneToBundleDir.ContainsKey(scene.name)) return;
