@@ -48,19 +48,12 @@ public class CLRPlugin : BaseUnityPlugin
         SceneManager.sceneLoaded += StealSceneGOs.OnSceneLoad;
     }
 
-    void OnDestroy()
-    {
-        _harmony.UnpatchSelf();
-        AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared")).Unload(true);
-        gameObject.GetComponent<SyncMaps>().UnAwake();
-    }
-
     // _resources bundles and clr_shared bundle are currently always loaded.
     void FindBundles()
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared"));
         MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
-        SwapShadersAndTextures(shared);
+        // SwapShadersAndTextures(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
@@ -94,7 +87,7 @@ public class CLRPlugin : BaseUnityPlugin
             }
             else if (filePath.EndsWith("_resources"))
             {
-                SwapShadersAndTextures(bundle);
+                // SwapShadersAndTextures(bundle);
                 foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
                 {
                     MapThumbnails.Add(tnail.name, tnail);
@@ -132,10 +125,9 @@ public class CLRPlugin : BaseUnityPlugin
 
     /// <summary>
     /// Shaders compile differently depending on if the bundle target is set to Windows or Linux, because of Vulkan vs OpenGL.
-    /// Textures are swapped to save on file size for both the map kit and bundled maps.
     /// </summary>
     /// <param name="bundle"></param>
-    void SwapShadersAndTextures(AssetBundle bundle)
+    void SwapShaders(AssetBundle bundle)
     {
         foreach (var mat in bundle.LoadAllAssets<Material>())
         {

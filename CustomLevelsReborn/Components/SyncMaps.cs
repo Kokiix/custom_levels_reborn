@@ -19,20 +19,12 @@ class SyncMaps : MonoBehaviour
 
     void Awake()
     {
-        MyceliumNetwork.DeregisterNetworkObject(this, ID);
         MyceliumNetwork.RegisterNetworkObject(this, ID);
         MyceliumNetwork.RegisterLobbyDataKey("MapsInRotation");
         MyceliumNetwork.RegisterLobbyDataKey("GameStarted");
         MyceliumNetwork.LobbyCreated += ResetMapLists;
         MyceliumNetwork.PlayerLeft += OnLobbyLeave;
         SceneManager.sceneLoaded += ResetLobbyKey;
-    }
-
-    internal void UnAwake()
-    {
-        MyceliumNetwork.LobbyCreated -= ResetMapLists;
-        MyceliumNetwork.PlayerLeft -= OnLobbyLeave;
-        SceneManager.sceneLoaded -= ResetLobbyKey;
     }
 
     void ResetLobbyKey(Scene scene, LoadSceneMode _)
