@@ -16,29 +16,6 @@ static class BundleLoad
         }
     }
 
-    // Workaround to prevent having to store / reload the _resources bundle
-    // *won't work for custom shaders tho...
-    internal static void ReloadShaders(Scene scene, LoadSceneMode mode)
-    {
-        if (!CLRPlugin.SceneToBundleDir.ContainsKey(scene.name)) return;
-
-        MeshRenderer[] renderers = GameObject.FindObjectsOfType<MeshRenderer>();
-
-        foreach (MeshRenderer renderer in renderers)
-        {
-            foreach (Material mat in renderer.sharedMaterials)
-            {
-                if (mat != null && mat.shader != null)
-                {
-                    string shaderName = mat.shader.name;
-                    mat.shader = Shader.Find(shaderName);
-
-                    mat.EnableKeyword("LIGHTMAP_ON");
-                }
-            }
-        }
-    }
-
     // Gets triggered multiple times on sceneload i think..
     internal static void Start(string sceneName)
     {
@@ -57,7 +34,6 @@ static class MultiplayerBundleLoad
         static void Prepare()
         {
             UnityEngine.SceneManagement.SceneManager.sceneUnloaded += BundleLoad.UnloadBundle;
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += BundleLoad.ReloadShaders;
         }
 
         static void Postfix(string __result)

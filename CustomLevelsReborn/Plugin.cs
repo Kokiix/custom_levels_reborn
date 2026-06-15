@@ -53,7 +53,6 @@ public class CLRPlugin : BaseUnityPlugin
     {
         var shared = AssetBundle.LoadFromFile(Path.Combine(PluginDir, "clr_shared"));
         MapDisabledSprite = shared.LoadAsset<Sprite>("MapDisableOverlay");
-        // SwapShadersAndTextures(shared);
 
         foreach (var modDir in Directory.EnumerateDirectories(Paths.PluginPath))
         {
@@ -87,7 +86,6 @@ public class CLRPlugin : BaseUnityPlugin
             }
             else if (filePath.EndsWith("_resources"))
             {
-                // SwapShadersAndTextures(bundle);
                 foreach (var tnail in bundle.LoadAllAssets<Texture2D>())
                 {
                     MapThumbnails.Add(tnail.name, tnail);
@@ -121,23 +119,5 @@ public class CLRPlugin : BaseUnityPlugin
         }
         catch (Exception) { }
         return "{NO_VERSION_FOUND}";
-    }
-
-    /// <summary>
-    /// Shaders compile differently depending on if the bundle target is set to Windows or Linux, because of Vulkan vs OpenGL.
-    /// </summary>
-    /// <param name="bundle"></param>
-    void SwapShaders(AssetBundle bundle)
-    {
-        foreach (var mat in bundle.LoadAllAssets<Material>())
-        {
-            var existingShader = mat.shader;
-
-            var inGameShader = Shader.Find(existingShader.name);
-            if (inGameShader)
-            {
-                mat.shader = inGameShader;
-            }
-        }
     }
 }
