@@ -18,7 +18,6 @@ static class StealSceneGOs
         }
         else if (s.name == MapToStealFrom)
         {
-            CLRPlugin.Log.LogInfo("This error isn't that important :)");
             foreach (var obj in s.GetRootGameObjects())
             {
                 if (RequiredGOs.Contains(obj.name))
