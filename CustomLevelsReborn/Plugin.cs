@@ -65,10 +65,15 @@ public class CLRPlugin : BaseUnityPlugin
         Logger.LogInfo("Loaded maps: " + string.Join(", ", MapVersions));
     }
 
+    HashSet<string> seenBundles = [];
     void LoadBundles(string dir, string packageVer)
     {
         foreach (var filePath in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
         {
+            var bundleName = Path.GetFileName(filePath);
+            if (seenBundles.Contains(bundleName)) continue;
+            else seenBundles.Add(bundleName);
+
             var bundle = AssetBundle.LoadFromFile(filePath);
             if (bundle.isStreamedSceneAssetBundle)
             {
@@ -78,8 +83,11 @@ public class CLRPlugin : BaseUnityPlugin
                 foreach (var scene in bundle.GetAllScenePaths()
                 .Select(Path.GetFileNameWithoutExtension))
                 {
-                    SceneToBundleDir.Add(scene, filePath);
-                    MapVersions.Add(scene + "-v" + packageVer);
+                    if (!SceneToBundleDir.ContainsKey(scene))
+                    {
+                        SceneToBundleDir.Add(scene, filePath);
+                        MapVersions.Add(scene + "-v" + packageVer);
+                    }
                 }
 
                 bundle.Unload(true);
