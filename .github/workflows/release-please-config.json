@@ -1,0 +1,15 @@
+{
+    "packages": {
+        ".": {
+            "release-type": "simple",
+            "changelog-path": ".thunderstore/CHANGELOG.md",
+            "skip-github-release": true,
+            "extra-files": [
+                {
+                    "type": "generic",
+                    "path": "CustomLevelsReborn.csproj"
+                }
+            ]
+        }
+    }
+}
