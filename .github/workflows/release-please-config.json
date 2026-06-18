@@ -8,6 +8,13 @@
                     "type": "generic",
                     "path": "CustomLevelsReborn.csproj"
                 }
+            ],
+            "changelog-sections": [
+                {
+                    "type": "cmk",
+                    "section": "CustomMapKit",
+                    "hidden": false
+                }
             ]
         }
     }
