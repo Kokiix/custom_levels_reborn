@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-enum WeaponType
+public enum WeaponType
 {
     AAA12,
     AKK,
@@ -87,19 +87,18 @@ public class CustomSpawner : MonoBehaviour
 
     void Awake()
     {
-        var weaponString = _weapon.ToString();
-        if (weaponString == "AKK")
-            weaponString = "AK-K";
-
         // Required for Recon mode
         if (SpawnerManager.NameToWeaponDict.Count == 0)
         {
             SpawnerManager.PopulateAllWeapons();
         }
 
+        var weaponString = _weapon.ToString();
+        if (weaponString == "AKK")
+            weaponString = "AK-K";
+
         var spawner = gameObject.GetComponent<ItemSpawner>();
         spawner.itemToSpawn = SpawnerManager.NameToWeaponDict[weaponString];
         spawner.weaponRespawnTimeInSeconds = _weaponRespawnTimeInSeconds;
-        spawner.gameObject.SetActive(true);
     }
 }
